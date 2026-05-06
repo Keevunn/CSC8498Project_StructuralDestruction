@@ -90,7 +90,7 @@ void AChargeActor::Explode() {
 				
 				if (IsValid(Structure)) {
 					AffectedStructures.Add(TObjectKey<AStructureActor>(Structure));
-					bIsBModel = Structure->GetStabilityModelType() == FName("B_Physics");
+					bIsBModel = Structure->GetStabilityModelType() == FName("PHYS");
 				}
 			}
 			

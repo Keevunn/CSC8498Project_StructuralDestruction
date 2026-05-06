@@ -24,7 +24,7 @@ struct FBaselineConstraintEdge {
 };
 
 
-UCLASS(DisplayName = "B: Physics Baseline (constraints only)")
+UCLASS(DisplayName = "PHYS: Chaos Constraint Baseline")
 class CONTROLLEDDEMOLITION_API UStructurePhysicsBaselineModel : public UStructureStabilityModel
 {
 	GENERATED_BODY()
@@ -38,7 +38,7 @@ public:
 	// Intentionally empty - breaks handled by constraints 
 	virtual void OnPieceBroken(ABuildingPiece* BrokenPiece) override {}
 	
-	virtual FName GetModelType() const override { return TEXT("B_Physics"); }
+	virtual FName GetModelType() const override { return TEXT("PHYS"); }
 	
 	UPROPERTY(EditAnywhere, Category = "Physics")
 	float PieceMass = 50.f;
