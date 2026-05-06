@@ -7,7 +7,7 @@
 #include "StructureConnectivityModel.generated.h"
 
 
-UCLASS(DisplayName = "V1: Connectivity (BFS from anchors)")
+UCLASS(DisplayName = "CON: Connectivity Model")
 class CONTROLLEDDEMOLITION_API UStructureConnectivityModel : public UStructureStabilityModel
 {
 	GENERATED_BODY()
@@ -18,7 +18,7 @@ public:
 	virtual void RefreshState() override;
 	virtual void OnPieceBroken(ABuildingPiece* BrokenPiece) override;
 	
-	virtual FName GetModelType() const override { return TEXT("V1_Connectivity"); }
+	virtual FName GetModelType() const override { return TEXT("CON"); }
 	
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDrawSupportDebug = true;

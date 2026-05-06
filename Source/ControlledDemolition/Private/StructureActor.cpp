@@ -157,8 +157,7 @@ void AStructureActor::FindConnectionsForPiece(ABuildingPiece* SourcePiece) {
 	TArray<FOverlapResult> OverlapResults;
 	
 	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_GameTraceChannel1);
 	
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(StructureConnectionOverlap), false);
 	QueryParams.AddIgnoredActor(this);
