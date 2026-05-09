@@ -76,25 +76,33 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Building Piece")
 	EPieceRole PieceRole = EPieceRole::Support;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties")
 	float MaxHealth = 100.0f;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties")
 	float CurrentHealth = 100.0f;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece")
+	// Load and capacity only used in LOAD model
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties")
+	float Load = 10.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties")
+	float Capacity = 100.0f;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
 	bool bAnchored = false;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
 	bool bSupported = false;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
 	bool bBroken = false;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
 	bool bIsObjective = false;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
 	bool bShouldProtect = false;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Debug")
