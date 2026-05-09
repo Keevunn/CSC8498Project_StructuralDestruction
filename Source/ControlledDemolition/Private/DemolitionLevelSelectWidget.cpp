@@ -23,18 +23,18 @@ void UDemolitionLevelSelectWidget::NativeConstruct() {
 		Button_LevelThree->OnClicked.AddDynamic(this, &UDemolitionLevelSelectWidget::HandleLevelThreeClicked);
 }
 
-// TODO ALL JOB LEVEL NAMES HERE ARE PLACEHOLDERS
+// TODO JOB LEVEL NAMES HERE ARE PLACEHOLDERS
 
 void UDemolitionLevelSelectWidget::HandleLevelOneClicked() {
 	OpenJobLevel(TEXT("Level_SimpleTower"));
 }
 
 void UDemolitionLevelSelectWidget::HandleLevelTwoClicked() {
-	OpenJobLevel(TEXT("Job02"));
+	OpenJobLevel(TEXT("Level_Phys_SimpleTower"));
 }
 
 void UDemolitionLevelSelectWidget::HandleLevelThreeClicked() {
-	OpenJobLevel(TEXT("Job03"));
+	OpenJobLevel(NAME_None);
 }
 
 void UDemolitionLevelSelectWidget::OpenJobLevel(const FName LevelName) {
