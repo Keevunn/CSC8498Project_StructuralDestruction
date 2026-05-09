@@ -40,6 +40,9 @@ public:
 	
 	virtual FName GetModelType() const override { return TEXT("PHYS"); }
 	
+	int32 GetInitialConstraintCount() const { return InitialConstraintCount; }
+	int32 GetConstraintBreakCount() const { return ConstraintBreakCount; }
+	
 	UPROPERTY(EditAnywhere, Category = "Physics")
 	float PieceMass = 50.f;
 	
@@ -55,9 +58,10 @@ protected:
 	
 	TArray<FBaselineConstraintEdge> ConstraintEdges;
 	
-	TMap<TObjectKey<ABuildingPiece>, FVector> InitialPieceLocations;
+	const float SafetyFactor = 4.f;		// Scales the load ceiling, absorbs startup jitter
+	const float LeverArmScale = 50.f;	// Torque scales with lever arm, distance from joint
+	const float Gravity = 980.f;		// According to Unreal's default gravity value
 	
-	const float SafetyFactor = 4.f;	// Scales the load ceiling, absorbs startup jitter
-	const float LeverArmScale = 50.f; // Torque scales with lever arm, distance from joint
-	const float Gravity = 980.f;	// According to Unreal's default gravity value
+	int32 InitialConstraintCount = 0;
+	int32 ConstraintBreakCount = 0;
 };

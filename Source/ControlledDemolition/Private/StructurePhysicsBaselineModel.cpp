@@ -12,7 +12,8 @@ void UStructurePhysicsBaselineModel::Initialise(AStructureActor* InStructure) {
 	for (FBaselineConstraintEdge& Edge : ConstraintEdges)
 		if (IsValid(Edge.Constraint)) Edge.Constraint->DestroyComponent();
 	ConstraintEdges.Empty();
-	InitialPieceLocations.Empty();
+	InitialConstraintCount = 0;
+	ConstraintBreakCount = 0;
 	
 	OwningStructure = InStructure;
 	if (!OwningStructure.IsValid()) return;
@@ -76,15 +77,15 @@ void UStructurePhysicsBaselineModel::SpawnConstraintsFromAdjacency() {
 			// Soft limits
 			Constraint->ConstraintInstance.ProfileInstance.LinearLimit.bSoftConstraint = true;
 			Constraint->ConstraintInstance.ProfileInstance.LinearLimit.Stiffness = 1500.f;
-			Constraint->ConstraintInstance.ProfileInstance.LinearLimit.bSoftConstraint = 200.f;
+			Constraint->ConstraintInstance.ProfileInstance.LinearLimit.Damping = 200.f;
 			
 			Constraint->ConstraintInstance.ProfileInstance.ConeLimit.bSoftConstraint = true;
 			Constraint->ConstraintInstance.ProfileInstance.ConeLimit.Stiffness = 1500.f;
-			Constraint->ConstraintInstance.ProfileInstance.ConeLimit.bSoftConstraint = 50.f;
+			Constraint->ConstraintInstance.ProfileInstance.ConeLimit.Damping = 50.f;
 			
 			Constraint->ConstraintInstance.ProfileInstance.TwistLimit.bSoftConstraint = true;
 			Constraint->ConstraintInstance.ProfileInstance.TwistLimit.Stiffness = 1500.f;
-			Constraint->ConstraintInstance.ProfileInstance.TwistLimit.bSoftConstraint = 50.f;
+			Constraint->ConstraintInstance.ProfileInstance.TwistLimit.Damping = 50.f;
 			
 			Constraint->SetLinearBreakable(true, LinearBreakThreshold);
 			Constraint->SetAngularBreakable(true, AngularBreakThreshold);
@@ -95,10 +96,11 @@ void UStructurePhysicsBaselineModel::SpawnConstraintsFromAdjacency() {
 		}
 	}
 	
-	UE_LOG(LogTemp, Log, TEXT("[B] StructureActor '%s' | Constraints spawned: %d"),
+	/*UE_LOG(LogTemp, Log, TEXT("[B] StructureActor '%s' | Constraints spawned: %d"),
 		*Structure->GetDebugName(), 
 		ConstraintEdges.Num()
-	);
+	);*/
+	InitialConstraintCount = ConstraintEdges.Num();
 }
 
 void UStructurePhysicsBaselineModel::RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint,
@@ -134,8 +136,6 @@ void UStructurePhysicsBaselineModel::ConfigurePiecesForSetup() {
 		Mesh->SetMassOverrideInKg(NAME_None, PieceMass, true); // TEMP should move mass to BuildingPiece
 	
 		Mesh->SetSimulatePhysics(false); // no physics simulation before constraints exist
-		
-		InitialPieceLocations.Add(TObjectKey<ABuildingPiece>(Piece), Piece->GetPieceCentreLocation());
 	}
 }
 
@@ -156,6 +156,7 @@ void UStructurePhysicsBaselineModel::HandleConstraintBroken(const int32 Constrai
 		if (Edge.bBroken || !IsValid(Edge.Constraint) || Edge.Constraint->IsBroken()) continue;
 	
 		Edge.bBroken = true;
+		ConstraintBreakCount++;
 		if (ABuildingPiece* A = Edge.PieceA.Get()) A->MarkBrokenFromPhysics();
 		if (ABuildingPiece* B = Edge.PieceB.Get()) B->MarkBrokenFromPhysics();
 	
