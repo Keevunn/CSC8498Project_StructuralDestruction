@@ -97,5 +97,5 @@ void UStructureConnectivityModel::DetachUnsupportedPieces() {
 	const auto& Pieces = OwningStructure->GetPieces();
 	
 	for (ABuildingPiece* Piece : Pieces)
-		if (IsValid(Piece) && !Piece->IsBroken() && !Piece->IsSupported() && !Piece->IsAnchored()) Piece->ForceBreakPiece();
+		if (IsValid(Piece) && !Piece->IsBroken() && !Piece->IsSupported() && !Piece->IsAnchored()) Piece->RecordBreak();
 }

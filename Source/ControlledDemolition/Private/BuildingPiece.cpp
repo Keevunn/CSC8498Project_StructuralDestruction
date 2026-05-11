@@ -93,12 +93,12 @@ void ABuildingPiece::ApplyExplosionDamage(const FVector& ExplosionOrigin, float 
 	}
 }
 
-void ABuildingPiece::ForceBreakPiece() {
+void ABuildingPiece::RecordBreak() {
 	if (bBroken) return;
 	BreakPiece();
 }
 
-void ABuildingPiece::MarkBrokenFromPhysics() {
+void ABuildingPiece::RecordPhysicsBreak() {
 	if (bBroken) return;
 	
 	bBroken = true;

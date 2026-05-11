@@ -33,6 +33,7 @@ public:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
+	EPieceRole GetPieceRole() const				{ return PieceRole;}
 	void SetPieceRole(const EPieceRole InRole)	{ PieceRole = InRole; }
 	void SetLoad(const float InLoad)			{ Load = InLoad; }
 	void SetCapacity(const float InCapacity)	{ Capacity = InCapacity;}
@@ -43,8 +44,8 @@ public:
 	
 	FOnBuildingPieceBroken OnPieceBroken;
 	
-	void ForceBreakPiece();
-	void MarkBrokenFromPhysics();
+	void RecordBreak();
+	void RecordPhysicsBreak();
 	
 	void SetIsObjective(const bool bInIsObjective) { bIsObjective = bInIsObjective; }
 	void SetShouldProtect(const bool bInShouldProtect) { bShouldProtect = bInShouldProtect; }

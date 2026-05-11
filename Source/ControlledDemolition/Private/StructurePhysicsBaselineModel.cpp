@@ -157,8 +157,8 @@ void UStructurePhysicsBaselineModel::HandleConstraintBroken(const int32 Constrai
 	
 		Edge.bBroken = true;
 		ConstraintBreakCount++;
-		if (ABuildingPiece* A = Edge.PieceA.Get()) A->MarkBrokenFromPhysics();
-		if (ABuildingPiece* B = Edge.PieceB.Get()) B->MarkBrokenFromPhysics();
+		if (ABuildingPiece* A = Edge.PieceA.Get()) A->RecordPhysicsBreak();
+		if (ABuildingPiece* B = Edge.PieceB.Get()) B->RecordPhysicsBreak();
 	
 		Edge.Constraint->DestroyComponent();
 		Edge.Constraint = nullptr;
