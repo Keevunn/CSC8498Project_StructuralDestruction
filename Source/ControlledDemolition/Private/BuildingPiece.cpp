@@ -21,7 +21,13 @@ ABuildingPiece::ABuildingPiece()
 	PieceMesh->SetCollisionObjectType(ECC_GameTraceChannel1); // Building Piece Channel
 	PieceMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	PieceMesh->SetSimulatePhysics(false);
-
+	
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(
+	TEXT("/Game/Meshes/SM_BuildingPiece_Box"));
+	if (CubeMeshAsset.Succeeded())
+		PieceMesh->SetStaticMesh(CubeMeshAsset.Object);
+	
+	
 }
 
 // Called when the game starts or when spawned
@@ -29,8 +35,6 @@ void ABuildingPiece::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	UE_LOG(LogTemp, Warning, TEXT("Piece type=%d  (expect ECC_GameTraceChannel1=%d)"),
-	(int32)PieceMesh->GetCollisionObjectType(), (int32)ECC_GameTraceChannel1);
 	CurrentHealth = MaxHealth;
 	ApplyRoleDefaults();
 	

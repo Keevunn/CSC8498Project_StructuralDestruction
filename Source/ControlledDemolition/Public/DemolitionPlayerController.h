@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "StructureSpawner.h"
 #include "GameFramework/PlayerController.h"
 #include "DemolitionPlayerController.generated.h"
 
@@ -23,6 +24,11 @@ public:
 	void ShowLevelSelect();
 	
 	void UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges);
+	
+	UFUNCTION(Exec)
+	void DebugSpawnTower(int32 N) {
+		UStructureSpawner::SpawnSimpleTower(this, FVector(0, 0, 100), N, 42);
+	}
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")

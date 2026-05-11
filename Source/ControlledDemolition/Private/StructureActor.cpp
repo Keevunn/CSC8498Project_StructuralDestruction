@@ -19,6 +19,15 @@ AStructureActor::AStructureActor()
 
 }
 
+FName AStructureActor::GetStabilityModelType() const {
+	return StabilityModel ? StabilityModel->GetModelType() : NAME_None;
+}
+
+void AStructureActor::AssignPieces(const TArray<ABuildingPiece*>& InPieces) {
+	Pieces.Reset(InPieces.Num());
+	for (ABuildingPiece* P : InPieces) Pieces.Add(P); // Structure Actor owns all pieces
+}
+
 void AStructureActor::ProcessDeferredUpdates() {
 	RefreshStructureState();
 }
@@ -62,10 +71,6 @@ void AStructureActor::RecordMetrics(const float InElapsedMs) {
 	RuntimeMetrics.PieceCount = Pieces.Num();
 }
 
-FName AStructureActor::GetStabilityModelType() const {
-	return StabilityModel ? StabilityModel->GetModelType() : NAME_None;
-}
-
 FString AStructureActor::GetDebugName() const {
 	if (!DebugStructureName.IsNone()) return DebugStructureName.ToString();
 	
@@ -106,7 +111,7 @@ void AStructureActor::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No StabilityModel assigned"), *GetDebugName());
 	
 	RefreshStructureState();
-	
+	RecordMetrics(0.f); // Fills RuntimeMetrics with initial data
 }
 
 void AStructureActor::EndPlay(const EEndPlayReason::Type EndPlayReason) {

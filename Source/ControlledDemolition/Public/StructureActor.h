@@ -21,6 +21,8 @@ USTRUCT(BlueprintType)
 struct FStructureRuntimeMetrics {
 	GENERATED_BODY()
 	
+	// All members can be viewed in editor for testing
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics")
 	int32 PieceCount = 0;
 	
@@ -28,13 +30,40 @@ struct FStructureRuntimeMetrics {
 	int32 ConnectionCount = 0;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics")
-	int32 SupportedCount = 0;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics")
 	float LastBuildMs = 0.0f;
 	
+	// CONN/LOAD - PHYS reports this as 0
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics")
 	float LastSolveMs = 0.0f;
+	
+	// PHYS only
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Physics-only Baseline")
+	int32 ConstraintCount = 0;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Physics-only Baseline")
+	int32 ConstraintBreaks = 0;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Physics-only Baseline")
+	float ConstraintSpawnMs = 0.f;
+	
+	// CONN only
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Connectivity model")
+	int32 SupportedCount = 0;
+	
+	// LOAD only
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Load Propagation Model")
+	int32 CascadeIterations = 0;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Load Propagation Model")
+	int32 OverloadFails = 0;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Load Propagation Model")
+	float CascadeMs = 0.f;
+
+	//void ApplyExternalTrigger(EBenchmarkScenario Scenario, const FRandomStream& Rng);
 };
 
 UCLASS()
@@ -46,6 +75,9 @@ public:
 	// Sets default values for this actor's properties
 	AStructureActor();
 	
+	FName GetStabilityModelType() const;
+	void AssignPieces(const TArray<ABuildingPiece*>& InPieces);
+	
 	void MarkConnectionsDirty() { bConnectionsDirty = true; }
 	void MarkStabilityDirty() { bStabilityDirty = true; }
 	void ProcessDeferredUpdates();
@@ -56,8 +88,6 @@ public:
 	
 	const TArray<TObjectPtr<ABuildingPiece>>& GetPieces() const { return Pieces; }
 	const TMap<TObjectKey<ABuildingPiece>, TArray<TWeakObjectPtr<ABuildingPiece>>>& GetConnections() const { return Connections; }
-	
-	FName GetStabilityModelType() const;
 	
 	FString GetDebugName() const;
 	const FStructureRuntimeMetrics& GetRuntimeMetrics() const { return RuntimeMetrics; }

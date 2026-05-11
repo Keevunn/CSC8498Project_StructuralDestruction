@@ -33,6 +33,10 @@ public:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
+	void SetPieceRole(const EPieceRole InRole)	{ PieceRole = InRole; }
+	void SetLoad(const float InLoad)			{ Load = InLoad; }
+	void SetCapacity(const float InCapacity)	{ Capacity = InCapacity;}
+	
 	void ApplyRoleDefaults();
 	
 	void ApplyExplosionDamage(const FVector& ExplosionOrigin, float ExplosionRadius, float MaxDamage);
@@ -84,10 +88,10 @@ protected:
 	
 	// Load and capacity only used in LOAD model
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties|Load Propagation Model")
 	float Load = 10.0f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Building Piece|Material Properties|Load Propagation Model")
 	float Capacity = 100.0f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
