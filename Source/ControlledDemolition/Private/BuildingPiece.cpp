@@ -155,7 +155,6 @@ FLinearColor ABuildingPiece::GetRoleDebugColour() const {
 		return FLinearColor(0.1f, 1.0f, 0.1f);
 	case EPieceRole::Protected:
 		return FLinearColor(0.1f, 0.3f, 1.0f);
-	case EPieceRole::Decorative:
 	default:
 		return FLinearColor::White;
 	}

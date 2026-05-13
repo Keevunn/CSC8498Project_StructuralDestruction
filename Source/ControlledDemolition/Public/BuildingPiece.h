@@ -18,7 +18,6 @@ enum class EPieceRole : uint8 {
 	Load UMETA(DisplayName = "Load"),
 	Objective UMETA(DisplayName = "Objective"),
 	Protected UMETA(DisplayName = "Protected"),
-	Decorative UMETA(DisplayName = "Decorative")
 };
 
 UCLASS()
@@ -51,7 +50,7 @@ public:
 	void SetShouldProtect(const bool bInShouldProtect) { bShouldProtect = bInShouldProtect; }
 	
 	bool IsObjective() const		{ return bIsObjective; }
-	bool ShouldProtect() const	{ return bShouldProtect; }
+	bool ShouldProtect() const	{ return bShouldProtect; } // TODO Is it faster to keep this or look up role (one source of truth?)
 	
 	void SetSupported(const bool bInSupported) { bSupported = bInSupported; }
 	

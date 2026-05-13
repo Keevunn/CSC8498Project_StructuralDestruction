@@ -12,12 +12,8 @@ void UStructureConnectivityModel::Initialise(AStructureActor* InStructure) {
 
 void UStructureConnectivityModel::RefreshState() {
 	ReconfigureSupport();
-	// ? Anything else ?
 }
 
-void UStructureConnectivityModel::OnPieceBroken(ABuildingPiece* BrokenPiece) {
-	// Intentionally empty - Graph resolved from refresh state
-}
 
 void UStructureConnectivityModel::ReconfigureSupport() {
 	const double StartSec = FPlatformTime::Seconds();

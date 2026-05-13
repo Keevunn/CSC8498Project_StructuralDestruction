@@ -115,15 +115,6 @@ void UStructurePhysicsBaselineModel::RegisterConstraintEdge(UPhysicsConstraintCo
 	Edge.bBroken = false;
 	
 	ConstraintEdges.Add(Edge);
-	
-	UE_LOG(
-		LogTemp,
-		Log,
-		TEXT("[B] Registered edge %d | %s <-> %s"),
-		EdgeIdx,
-		*PieceA->GetDebugName(),
-		*PieceB->GetDebugName()
-	);
 }
 
 void UStructurePhysicsBaselineModel::ConfigurePiecesForSetup() {

@@ -5,9 +5,6 @@
 
 #include "BuildingPiece.h"
 #include "DemolitionGameState.h"
-#include "GameEconomySubsystem.h"
-#include "JobManagerSubsystem.h"
-#include "JobTypes.h"
 #include "StructureStabilityModel.h"
 #include "Engine/OverlapResult.h"
 
@@ -116,7 +113,11 @@ void AStructureActor::BeginPlay()
 
 void AStructureActor::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	for (ABuildingPiece* Piece : Pieces)
-		if (IsValid(Piece)) Piece->OnPieceBroken.RemoveAll(this);
+		if (IsValid(Piece)) {
+			Piece->OnPieceBroken.RemoveAll(this);
+			Piece->Destroy();
+		}
+	Pieces.Empty();
 	
 	if (ADemolitionGameState* GameState = GetWorld()->GetGameState<ADemolitionGameState>())
 		GameState->UnregisterStructure(this);

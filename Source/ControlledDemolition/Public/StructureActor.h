@@ -75,6 +75,8 @@ public:
 	// Sets default values for this actor's properties
 	AStructureActor();
 	
+	void SetStabilityModel(UStructureStabilityModel* InModel) { StabilityModel = InModel; }
+	UStructureStabilityModel* GetStabilityModelObj() const { return StabilityModel; }
 	FName GetStabilityModelType() const;
 	void AssignPieces(const TArray<ABuildingPiece*>& InPieces);
 	
