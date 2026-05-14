@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "StructureStabilityModel.h"
-#include "StructurePhysicsBaselineModel.generated.h"
+#include "StructureStabilityModel_PHYS.generated.h"
 
 USTRUCT()
 struct FBaselineConstraintEdge {
@@ -25,7 +25,7 @@ struct FBaselineConstraintEdge {
 
 
 UCLASS(DisplayName = "PHYS: Chaos Constraint Baseline")
-class CONTROLLEDDEMOLITION_API UStructurePhysicsBaselineModel : public UStructureStabilityModel
+class CONTROLLEDDEMOLITION_API UStructureStabilityModel_PHYS : public UStructureStabilityModel
 {
 	GENERATED_BODY()
 	

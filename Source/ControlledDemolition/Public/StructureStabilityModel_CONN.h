@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "StructureStabilityModel.h"
-#include "StructureConnectivityModel.generated.h"
+#include "StructureStabilityModel_CONN.generated.h"
 
 
 UCLASS(DisplayName = "CONN: Connectivity Model")
-class CONTROLLEDDEMOLITION_API UStructureConnectivityModel : public UStructureStabilityModel
+class CONTROLLEDDEMOLITION_API UStructureStabilityModel_CONN : public UStructureStabilityModel
 {
 	GENERATED_BODY()
 	

@@ -5,8 +5,8 @@
 
 #include "BuildingPiece.h"
 #include "StructureActor.h"
-#include "StructureConnectivityModel.h"
-#include "StructurePhysicsBaselineModel.h"
+#include "StructureStabilityModel_CONN.h"
+#include "StructureStabilityModel_PHYS.h"
 #include "StructureSpawner.h"
 #include "StructureStabilityModel_LOAD.h"
 
@@ -52,9 +52,9 @@ namespace {
 	UStructureStabilityModel* CreateModelForSpec(AStructureActor* Owner, EBenchmarkModel Model) {
 		switch (Model) {
 		case EBenchmarkModel::PHYS:
-			return NewObject<UStructurePhysicsBaselineModel>(Owner);
+			return NewObject<UStructureStabilityModel_PHYS>(Owner);
 		case EBenchmarkModel::CONN:
-			return NewObject<UStructureConnectivityModel>(Owner);
+			return NewObject<UStructureStabilityModel_CONN>(Owner);
 		case EBenchmarkModel::LOAD:
 			return NewObject<UStructureStabilityModel_LOAD>(Owner);
 		default:
@@ -179,7 +179,7 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	
 	// Read PHYS-only setup metrics
 	if (Spec.Model == EBenchmarkModel::PHYS)
-		if (auto* PhysModel = Cast<UStructurePhysicsBaselineModel>(Model))
+		if (auto* PhysModel = Cast<UStructureStabilityModel_PHYS>(Model))
 			CurrentRow.ConstraintCount = PhysModel->GetInitialConstraintCount(); // May be different to Connection count due to arrangement
 		
 	
@@ -232,7 +232,7 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 		// Read PHYS-only post-event metrics
 		const FBenchmarkRunSpec& Spec = *CurrentSpec;
 		if (Spec.Model == EBenchmarkModel::PHYS)
-			if (auto* PhysModel = Cast<UStructurePhysicsBaselineModel>(Structure->GetStabilityModelObj())) {
+			if (auto* PhysModel = Cast<UStructureStabilityModel_PHYS>(Structure->GetStabilityModelObj())) {
 				CurrentRow.ConstraintBreaks = PhysModel->GetConstraintBreakCount();
 				CurrentRow.DestructionRatio = CurrentRow.ConstraintCount > 0
 					? float(CurrentRow.ConstraintBreaks) / CurrentRow.ConstraintCount

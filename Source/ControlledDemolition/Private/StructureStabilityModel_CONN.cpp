@@ -1,21 +1,21 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StructureConnectivityModel.h"
+#include "StructureStabilityModel_CONN.h"
 
 #include "BuildingPiece.h"
 #include "StructureActor.h"
 
-void UStructureConnectivityModel::Initialise(AStructureActor* InStructure) {
+void UStructureStabilityModel_CONN::Initialise(AStructureActor* InStructure) {
 	OwningStructure = InStructure;
 }
 
-void UStructureConnectivityModel::RefreshState() {
+void UStructureStabilityModel_CONN::RefreshState() {
 	ReconfigureSupport();
 }
 
 
-void UStructureConnectivityModel::ReconfigureSupport() {
+void UStructureStabilityModel_CONN::ReconfigureSupport() {
 	const double StartSec = FPlatformTime::Seconds();
 	
 	const auto& Pieces = OwningStructure->GetPieces();
@@ -88,7 +88,7 @@ void UStructureConnectivityModel::ReconfigureSupport() {
 	OwningStructure->RecordMetrics(ElapsedMs);
 }
 
-void UStructureConnectivityModel::DetachUnsupportedPieces() {
+void UStructureStabilityModel_CONN::DetachUnsupportedPieces() {
 	const auto& Pieces = OwningStructure->GetPieces();
 	
 	for (ABuildingPiece* Piece : Pieces)

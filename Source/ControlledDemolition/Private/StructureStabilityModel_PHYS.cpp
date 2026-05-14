@@ -1,13 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StructurePhysicsBaselineModel.h"
+#include "StructureStabilityModel_PHYS.h"
 
 #include "BuildingPiece.h"
 #include "StructureActor.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 
-void UStructurePhysicsBaselineModel::Initialise(AStructureActor* InStructure) {
+void UStructureStabilityModel_PHYS::Initialise(AStructureActor* InStructure) {
 	// Cleanup
 	for (FBaselineConstraintEdge& Edge : ConstraintEdges)
 		if (IsValid(Edge.Constraint)) Edge.Constraint->DestroyComponent();
@@ -23,7 +23,7 @@ void UStructurePhysicsBaselineModel::Initialise(AStructureActor* InStructure) {
 	EnablePhysicsOnAllPieces(); // Enables physics for non-anchored pieces
 }
 
-void UStructurePhysicsBaselineModel::SpawnConstraintsFromAdjacency() {
+void UStructureStabilityModel_PHYS::SpawnConstraintsFromAdjacency() {
 	AStructureActor* Structure = OwningStructure.Get();
 	if (!Structure) return;
 	
@@ -92,7 +92,7 @@ void UStructurePhysicsBaselineModel::SpawnConstraintsFromAdjacency() {
 			
 			RegisterConstraintEdge(Constraint, PieceA, PieceB);
 			
-			Constraint->OnConstraintBroken.AddDynamic(this, &UStructurePhysicsBaselineModel::HandleConstraintBroken);
+			Constraint->OnConstraintBroken.AddDynamic(this, &UStructureStabilityModel_PHYS::HandleConstraintBroken);
 		}
 	}
 	
@@ -103,7 +103,7 @@ void UStructurePhysicsBaselineModel::SpawnConstraintsFromAdjacency() {
 	InitialConstraintCount = ConstraintEdges.Num();
 }
 
-void UStructurePhysicsBaselineModel::RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint,
+void UStructureStabilityModel_PHYS::RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint,
 	ABuildingPiece* PieceA, ABuildingPiece* PieceB) {
 	if (!IsValid(Constraint) || !IsValid(PieceA) || !IsValid(PieceB)) return;
 	const int32 EdgeIdx = ConstraintEdges.Num();
@@ -117,7 +117,7 @@ void UStructurePhysicsBaselineModel::RegisterConstraintEdge(UPhysicsConstraintCo
 	ConstraintEdges.Add(Edge);
 }
 
-void UStructurePhysicsBaselineModel::ConfigurePiecesForSetup() {
+void UStructureStabilityModel_PHYS::ConfigurePiecesForSetup() {
 	for (ABuildingPiece* Piece : OwningStructure->GetPieces()) {
 		if (!IsValid(Piece)) continue;
 		UStaticMeshComponent* Mesh = Piece ? Piece->GetPieceMesh() : nullptr;
@@ -130,7 +130,7 @@ void UStructurePhysicsBaselineModel::ConfigurePiecesForSetup() {
 	}
 }
 
-void UStructurePhysicsBaselineModel::EnablePhysicsOnAllPieces() {
+void UStructureStabilityModel_PHYS::EnablePhysicsOnAllPieces() {
 	for (ABuildingPiece* Piece : OwningStructure->GetPieces()) {
 		if (!IsValid(Piece)) continue;
 		
@@ -141,7 +141,7 @@ void UStructurePhysicsBaselineModel::EnablePhysicsOnAllPieces() {
 	}
 }
 
-void UStructurePhysicsBaselineModel::HandleConstraintBroken(const int32 ConstraintIndex) {
+void UStructureStabilityModel_PHYS::HandleConstraintBroken(const int32 ConstraintIndex) {
 	// Cost negligible, doesn't rely on physics index
 	for (FBaselineConstraintEdge& Edge : ConstraintEdges) {
 		if (Edge.bBroken || !IsValid(Edge.Constraint) || Edge.Constraint->IsBroken()) continue;
