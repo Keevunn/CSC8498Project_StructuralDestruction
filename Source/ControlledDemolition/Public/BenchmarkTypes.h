@@ -10,7 +10,7 @@ enum class EBenchmarkModel : uint8 {
 
 UENUM()
 enum class EBenchmarkScenario : uint8 {
-	AnchorRemoval, LoadRedistribution, ProtectedPreservation
+	AnchorRemoval, SupportRemoval, LoadRedistribution, ProtectedPreservation
 };
 
 USTRUCT()
@@ -58,7 +58,7 @@ struct FBenchmarkRow {
 	
 	// Behavioural outcome ----------------------
 	int32	BrokenPieces			= 0;	// Total number of pieces with bBroken set to true at evaluation time
-	int32	SupportedPieces			= 0;	// Total number of pieces considered supported by the model
+	int32	SupportedPieces			= 0;	// Total number of pieces considered supported by the model (i.e. reachable from an anchor)
 	int32	DetachedPieces			= 0;	// Total number of pieces no longer reachable from an anchor
 	int32	ProtectedTotal			= 0;	// Total number of pieces with the 'Protected' role at spawn
 	int32	ProtectedBroken			= 0;	// Total number of 'Protected' pieces with bBroken set to true at evaluation time

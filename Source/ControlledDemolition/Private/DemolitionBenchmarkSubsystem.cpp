@@ -61,6 +61,13 @@ namespace {
 			return nullptr;
 		}
 	}
+	
+	FString GetEnumValueString(FString Full) {
+		int32 ColonPos;
+		if (!Full.FindLastChar(':', ColonPos)) return Full;
+		// removes the :: separator for cleaner output names
+		return Full.RightChop(ColonPos + 1);
+	}
 }
 
 void UDemolitionBenchmarkSubsystem::Initialize(FSubsystemCollectionBase& Collection) {
@@ -86,6 +93,7 @@ void UDemolitionBenchmarkSubsystem::Deinitialize() {
 void UDemolitionBenchmarkSubsystem::RunSweep(int32 Sweep) {
 	Queue.Empty();
 	if (Sweep == 1) EnqueueSweep_AnchorRemoval();
+	if (Sweep == 2) EnqueueSweep_SupportRemoval();
 	// call other tests from here when implemented ...
 	
 	StartNextRun();
@@ -97,26 +105,46 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
 	const int32 Repeats = 3;
 	
 	for (EBenchmarkModel Model : Models)
-	for (int32 PieceCount : Counts)
-	for (int32 i = 0; i < Repeats; i++) {
-		FBenchmarkRunSpec Spec;
-		Spec.Model = Model;
-		Spec.Scenario = EBenchmarkScenario::AnchorRemoval;
-		Spec.PieceCount = PieceCount;
-		Spec.RunIndex = i;
-		Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
-		Queue.Enqueue(Spec);
-	}
+		for (int32 PieceCount : Counts)
+		for (int32 i = 0; i < Repeats; i++) {
+			FBenchmarkRunSpec Spec;
+			Spec.Model = Model;
+			Spec.Scenario = EBenchmarkScenario::AnchorRemoval;
+			Spec.PieceCount = PieceCount;
+			Spec.RunIndex = i;
+			Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+			Queue.Enqueue(Spec);
+		}
+}
+
+void UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
+	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN};
+	const TArray<int32> Counts {10, 50};
+	const int32 Repeats = 3;
+	
+	for (EBenchmarkModel Model : Models)
+		for (int32 PieceCount : Counts)
+			for (int32 i = 0; i < Repeats; i++) {
+				FBenchmarkRunSpec Spec;
+				Spec.Model = Model;
+				Spec.Scenario = EBenchmarkScenario::SupportRemoval;
+				Spec.PieceCount = PieceCount;
+				Spec.RunIndex = i;
+				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+				Queue.Enqueue(Spec);
+			}
 }
 
 void UDemolitionBenchmarkSubsystem::BeginRun() {
+	TriggeredPieceIndex = INDEX_NONE;
+	
 	const FBenchmarkRunSpec& Spec = *CurrentSpec;
 	UWorld* World = GetGameInstance()->GetWorld();
 	if (!World) { StartNextRun(); return; }
 	
 	CurrentRow = FBenchmarkRow{};
-	CurrentRow.Model = StaticEnum<EBenchmarkModel>()->GetNameByValue((int64)Spec.Model).ToString();
-	CurrentRow.Scenario = StaticEnum<EBenchmarkScenario>()->GetNameByValue((int64)Spec.Scenario).ToString();
+	CurrentRow.Model = GetEnumValueString(StaticEnum<EBenchmarkModel>()->GetNameByValue((int64)Spec.Model).ToString());
+	CurrentRow.Scenario = GetEnumValueString(StaticEnum<EBenchmarkScenario>()->GetNameByValue((int64)Spec.Scenario).ToString());
 	CurrentRow.RunID = FString::Printf(TEXT("%s_%s_%d_R%02d_S%d"),
 		*CurrentRow.Model, *CurrentRow.Scenario, Spec.PieceCount, Spec.RunIndex, Spec.Seed);
 	CurrentRow.Timestamp = FDateTime::Now().ToIso8601();
@@ -161,9 +189,13 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	case EBenchmarkScenario::LoadRedistribution:
 		CurrentRow.TriggerEventMs = BreakPieceByRole(Structure, EPieceRole::Anchor, CurrentRng);
 		break;
+	case EBenchmarkScenario::SupportRemoval:
+		CurrentRow.TriggerEventMs = BreakPieceByRole(Structure, EPieceRole::Support, CurrentRng);
+		break;
 	case EBenchmarkScenario::ProtectedPreservation:
 		CurrentRow.TriggerEventMs = ExplodeAtRole(Structure, EPieceRole::Objective, 200.f, 250.f, CurrentRng);
 		break;
+	
 	}
 	
 	// Start sampling frame times
@@ -200,8 +232,12 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 		// Read PHYS-only post-event metrics
 		const FBenchmarkRunSpec& Spec = *CurrentSpec;
 		if (Spec.Model == EBenchmarkModel::PHYS)
-			if (auto* PhysModel = Cast<UStructurePhysicsBaselineModel>(Structure->GetStabilityModelObj()))
+			if (auto* PhysModel = Cast<UStructurePhysicsBaselineModel>(Structure->GetStabilityModelObj())) {
 				CurrentRow.ConstraintBreaks = PhysModel->GetConstraintBreakCount();
+				CurrentRow.DestructionRatio = CurrentRow.ConstraintCount > 0
+					? float(CurrentRow.ConstraintBreaks) / CurrentRow.ConstraintCount
+					: 0.f;
+			}
 		
 		CurrentRow.ProtectedFailureRatio = CurrentRow.ProtectedTotal > 0
 			? float(CurrentRow.ProtectedBroken) / CurrentRow.ProtectedTotal
@@ -229,10 +265,11 @@ void UDemolitionBenchmarkSubsystem::StartNextRun() {
 
 AStructureActor* UDemolitionBenchmarkSubsystem::
 SpawnStructureForScenario(UWorld* World, const FBenchmarkRunSpec& Spec) {
-	const FVector Origin(0.f, 0.f, 50.f);
+	const FVector Origin(0.f, 0.f, 0.f);
 	
 	switch (Spec.Scenario) {
 	case EBenchmarkScenario::AnchorRemoval:
+	case EBenchmarkScenario::SupportRemoval:
 		return UStructureSpawner::SpawnSimpleTower(this, Origin, Spec.PieceCount, Spec.Seed);
 	case EBenchmarkScenario::LoadRedistribution:
 		return UStructureSpawner::SpawnTwoSupportLoad(this, Origin, Spec.Seed);
@@ -267,14 +304,19 @@ float UDemolitionBenchmarkSubsystem::ExplodeAtRole(AStructureActor* Structure, c
 ABuildingPiece* UDemolitionBenchmarkSubsystem::PickByRole(const AStructureActor* Structure, const EPieceRole Role,
 	const FRandomStream& Rng) {
 	if (!IsValid(Structure)) return nullptr;
-		
-	TArray<ABuildingPiece*> Matches;
-	for (ABuildingPiece* Piece : Structure->GetPieces()) 
+	auto& Pieces = Structure->GetPieces();
+	
+	TArray<int32> MatchIndexes;
+	for (int32 i = 0; i < Pieces.Num(); i++) {
+		const ABuildingPiece* Piece = Pieces[i];
 		if (IsValid(Piece) && Piece->GetPieceRole() == Role && !Piece->IsBroken())
-			Matches.Add(Piece);
-		
-	if (Matches.IsEmpty()) return nullptr;
-	return Matches[Rng.RandRange(0, Matches.Num()-1)];
+			MatchIndexes.Add(i);
+	}
+	if (MatchIndexes.IsEmpty()) return nullptr;
+	
+	int32 TargetIndex = Rng.RandRange(0, MatchIndexes.Num()-1);
+	TriggeredPieceIndex = MatchIndexes[TargetIndex];
+	return Pieces[TriggeredPieceIndex];
 }
 
 void UDemolitionBenchmarkSubsystem::EnsureFileOpen() {
@@ -296,7 +338,7 @@ void UDemolitionBenchmarkSubsystem::EnsureFileOpen() {
 			"PieceCount,ConnectionCount,ConstraintCount,RunIndex,Seed,"
 			"StructureSpawnMs,BuildConnectionsMs,ModelInitialiseMs,TriggerEventMs,SolveMs,CascadeMs,"
 			"PeakFrameMs,AverageFrameMs,FramesObserved,"
-			"BrokenPieces,SupportedPieces,DetachedPieces,ProtectedTotal,ProtectedBroken,"
+			"BrokenPieces,SupportedPieces,ProtectedTotal,ProtectedBroken,"
 			"ObjectiveTotal,ObjectiveBroken,AnchorTotal,AnchorBroken,LoadTotal,LoadBroken,ConstraintBreaks,"
 			"CascadeIterations,OverloadFails,DestructionRatio,ProtectedFailureRatio,Passed,FailureModeNotes\n"
 		);
@@ -314,13 +356,13 @@ void UDemolitionBenchmarkSubsystem::WriteRow(const FBenchmarkRow& Row) {
 			 "%d,%d,%d,%d,%d,"
 			 "%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,"
 			 "%.3f,%.3f,%d,"
-			 "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+			 "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
 			 "%.3f,%.3f,%s,\"%s\"\n"),
 		*Row.RunID, *Row.Timestamp, *Row.MapName, *Row.StructureName, *Row.Model, *Row.Scenario,
 		Row.PieceCount, Row.ConnectionCount, Row.ConstraintCount, Row.RunIndex, Row.Seed,
 		Row.StructureSpawnMs, Row.BuildConnectionsMs, Row.ModelInitialiseMs, Row.TriggerEventMs, Row.SolveMs, Row.CascadeMs,
 		Row.PeakFrameMs, Row.AverageFrameMs, Row.FramesObserved,
-		Row.BrokenPieces, Row.SupportedPieces, Row.DetachedPieces, Row.ProtectedTotal, Row.ProtectedBroken, 
+		Row.BrokenPieces, Row.SupportedPieces, Row.ProtectedTotal, Row.ProtectedBroken, 
 		Row.ObjectiveTotal, Row.ObjectiveBroken, Row.AnchorTotal, Row.AnchorBroken, Row.LoadTotal, Row.LoadBroken, Row.ConstraintBreaks,
 		Row.CascadeIterations, Row.OverloadFails, Row.DestructionRatio, Row.ProtectedFailureRatio,
 		Row.Passed ? TEXT("true") : TEXT("false"), *Row.FailureModeNotes
@@ -344,15 +386,30 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 	case EBenchmarkScenario::AnchorRemoval:
 	{
 		/*
-		* Simple tower:	Removing anchor should detach all pieces
-		* Pass:			For tower of N pieces, (N-1) non-anchor pieces should be unsupported (anchors always marked as supported)
-		* Tolerance:		70% non-anchor pieces should be broken (can be tuned) 
+		* Simple tower:	Removing anchor should detach all pieces (PHYS: No effect - controlled by Chaos)
+		* Pass:			For tower of N pieces, (N-1) non-anchor pieces should be broken
 		*/
-		
-		const int32 ExpectedNonAnchorCount = Spec.PieceCount - 1;
-		const int32 Threshold = FMath::Max(1, ExpectedNonAnchorCount * 0.7f); // Note: 70% threshold is more forgiving for PHYS (pieces can get stuck in each other physically)
-		OutRow.Passed = OutRow.BrokenPieces - OutRow.AnchorBroken >= Threshold;
+		if (Spec.Model == EBenchmarkModel::PHYS) {
+			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
+			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Collapse");
+			break;
+		}
+		const int32 ExpectedBrokenNonAnchorCount = Spec.PieceCount - 1;
+		OutRow.Passed = OutRow.BrokenPieces - OutRow.AnchorBroken == ExpectedBrokenNonAnchorCount;
 		OutRow.FailureModeNotes = OutRow.Passed ? TEXT("Collapse as expected") : TEXT("No collapse");
+		break;
+	}
+	case EBenchmarkScenario::SupportRemoval:
+	{
+		if (Spec.Model == EBenchmarkModel::PHYS) {
+			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
+			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Unexpected collapse");
+			break;
+		}
+		// Pieces added to array such that the anchor is at the bottom (i=0) and others added in height order (ascending)
+		const int32 ExpectedBrokenCount = Spec.PieceCount - TriggeredPieceIndex;
+		OutRow.Passed = OutRow.BrokenPieces == ExpectedBrokenCount;
+		OutRow.FailureModeNotes = OutRow.Passed ? TEXT("Collapse as expected") : TEXT("Unexpected no collapse");
 		break;
 	}
 	case EBenchmarkScenario::LoadRedistribution:

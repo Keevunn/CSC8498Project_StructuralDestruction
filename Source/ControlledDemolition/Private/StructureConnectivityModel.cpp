@@ -31,17 +31,14 @@ void UStructureConnectivityModel::ReconfigureSupport() {
 		if (!IsValid(Piece) || !Piece->IsAnchored() || Piece->IsBroken()) 
 			continue;
 		
-		// Anchors supported set to true
+		// Unbroken Anchors supported set to true
 		Piece->SetSupported(true);
 		Queue.Enqueue(Piece);
 		bFoundAnchor = true;
 	}
 	
-	if (!bFoundAnchor) {
+	if (!bFoundAnchor)
 		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No assigned anchors"), *OwningStructure->GetDebugName());
-		DetachUnsupportedPieces();
-		return;
-	}
 	
 	// BFS - sets 'supported' to true as long as piece is connected
 	while (!Queue.IsEmpty()) {
@@ -64,6 +61,8 @@ void UStructureConnectivityModel::ReconfigureSupport() {
 			Queue.Enqueue(Neighbour);
 		}
 	}
+	
+	DetachUnsupportedPieces();
 	
 	if (bDrawSupportDebug) {
 		for (const ABuildingPiece* Piece : Pieces) {

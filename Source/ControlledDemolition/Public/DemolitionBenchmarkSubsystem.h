@@ -30,6 +30,7 @@ public:
 private:
 	// Run loop ---------------------------------
 	void EnqueueSweep_AnchorRemoval();
+	void EnqueueSweep_SupportRemoval();
 	void BeginRun();
 	void EndRun();
 	void StartNextRun();
@@ -65,6 +66,7 @@ private:
 	TWeakObjectPtr<AStructureActor> CurrentStructure;
 	TUniquePtr<FFrameTimeSampler> Sampler;
 	FRandomStream CurrentRng;
+	int32 TriggeredPieceIndex = INDEX_NONE;
 	
 	FTimerHandle WaitHandle;
 	

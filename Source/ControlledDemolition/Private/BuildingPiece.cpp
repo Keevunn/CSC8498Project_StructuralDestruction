@@ -26,8 +26,6 @@ ABuildingPiece::ABuildingPiece()
 	TEXT("/Game/Meshes/SM_BuildingPiece_Box"));
 	if (CubeMeshAsset.Succeeded())
 		PieceMesh->SetStaticMesh(CubeMeshAsset.Object);
-	
-	
 }
 
 // Called when the game starts or when spawned
