@@ -25,11 +25,6 @@ public:
 	
 	void UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges);
 	
-	UFUNCTION(Exec)
-	void DebugSpawnTower(int32 N) {
-		UStructureSpawner::SpawnSimpleTower(this, FVector(0, 0, 100), N, 42);
-	}
-	
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UDemolitionHUDWidget> HUDWidgetClass;

@@ -19,10 +19,10 @@ public:
 	
 	virtual FName GetModelType() const override { return TEXT("CONN"); }
 	
-	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDrawSupportDebug = true;
-	
 protected:
 	void ReconfigureSupport();
 	void DetachUnsupportedPieces();
+	
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bDrawSupportDebug = true;
 };

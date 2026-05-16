@@ -21,10 +21,15 @@ public:
 	
 private:
 	void BuildLayers(TMap<TObjectKey<ABuildingPiece>, int32>& OutLayers) const;
-	void AccumulateLoad(const TMap<TObjectKey<ABuildingPiece>, int32>& Layers, TMap<TObjectKey<ABuildingPiece>, float>& OutAccumLoad);
+	void AccumulateLoad(const TMap<TObjectKey<ABuildingPiece>, int32>& Layers, TMap<TObjectKey<ABuildingPiece>, float>& OutAccumLoad) const;
+	
+	void DrawLoadDebug() const;
 	
 	UPROPERTY(EditAnywhere, Category = "Load Propagation", meta = (ClampMin = "1"))
 	int32 MaxCascadeIterations = 10;
+	
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bDrawLoadInfoDebug = true;
 	
 	bool bRefreshActive = false;
 };

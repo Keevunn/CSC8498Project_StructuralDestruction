@@ -90,11 +90,11 @@ void UDemolitionBenchmarkSubsystem::Deinitialize() {
 	Super::Deinitialize();
 }
 
-void UDemolitionBenchmarkSubsystem::RunSweep(int32 Sweep) {
+void UDemolitionBenchmarkSubsystem::RunSweep(const int32 Sweep) {
 	Queue.Empty();
 	if (Sweep == 1) EnqueueSweep_AnchorRemoval();
 	if (Sweep == 2) EnqueueSweep_SupportRemoval();
-	// call other tests from here when implemented ...
+	if (Sweep == 3) EnqueueSweep_LoadRedistribution();
 	
 	StartNextRun();
 }
@@ -102,28 +102,28 @@ void UDemolitionBenchmarkSubsystem::RunSweep(int32 Sweep) {
 void UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN};
 	const TArray<int32> Counts {10, 50};
-	const int32 Repeats = 3;
+	constexpr int32 Repeats = 3;
 	
-	for (EBenchmarkModel Model : Models)
-		for (int32 PieceCount : Counts)
-		for (int32 i = 0; i < Repeats; i++) {
-			FBenchmarkRunSpec Spec;
-			Spec.Model = Model;
-			Spec.Scenario = EBenchmarkScenario::AnchorRemoval;
-			Spec.PieceCount = PieceCount;
-			Spec.RunIndex = i;
-			Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
-			Queue.Enqueue(Spec);
-		}
+	for (const EBenchmarkModel Model : Models)
+		for (const int32 PieceCount : Counts)
+			for (int32 i = 0; i < Repeats; i++) {
+				FBenchmarkRunSpec Spec;
+				Spec.Model = Model;
+				Spec.Scenario = EBenchmarkScenario::AnchorRemoval;
+				Spec.PieceCount = PieceCount;
+				Spec.RunIndex = i;
+				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+				Queue.Enqueue(Spec);
+			}
 }
 
 void UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN};
 	const TArray<int32> Counts {10, 50};
-	const int32 Repeats = 3;
+	constexpr int32 Repeats = 3;
 	
-	for (EBenchmarkModel Model : Models)
-		for (int32 PieceCount : Counts)
+	for (const EBenchmarkModel Model : Models)
+		for (const int32 PieceCount : Counts)
 			for (int32 i = 0; i < Repeats; i++) {
 				FBenchmarkRunSpec Spec;
 				Spec.Model = Model;
@@ -133,6 +133,23 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
 				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
 				Queue.Enqueue(Spec);
 			}
+}
+
+void UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
+	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
+	constexpr int32 PieceCount = 7;
+	constexpr int32 Repeats = 3;
+	
+	for (const EBenchmarkModel Model : Models)
+		for (int32 i = 0; i < Repeats; i++) {
+			FBenchmarkRunSpec Spec;
+			Spec.Model = Model;
+			Spec.Scenario = EBenchmarkScenario::LoadRedistribution;
+			Spec.PieceCount = PieceCount;
+			Spec.RunIndex = i;
+			Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+			Queue.Enqueue(Spec);
+		}
 }
 
 void UDemolitionBenchmarkSubsystem::BeginRun() {
@@ -232,12 +249,17 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 		// Read PHYS-only post-event metrics
 		const FBenchmarkRunSpec& Spec = *CurrentSpec;
 		if (Spec.Model == EBenchmarkModel::PHYS)
-			if (auto* PhysModel = Cast<UStructureStabilityModel_PHYS>(Structure->GetStabilityModelObj())) {
+			if (auto* PhysModel = Cast<UStructureStabilityModel_PHYS>(Structure->GetStabilityModelObj())) { // TODO can change so all values read to structure metrics then read from there
 				CurrentRow.ConstraintBreaks = PhysModel->GetConstraintBreakCount();
 				CurrentRow.DestructionRatio = CurrentRow.ConstraintCount > 0
 					? float(CurrentRow.ConstraintBreaks) / CurrentRow.ConstraintCount
 					: 0.f;
 			}
+		if (Spec.Model == EBenchmarkModel::LOAD) {
+			CurrentRow.CascadeIterations = Metrics.CascadeIterations;
+			CurrentRow.OverloadFails = Metrics.OverloadFails;
+			CurrentRow.CascadeMs = Metrics.CascadeMs;
+		}
 		
 		CurrentRow.ProtectedFailureRatio = CurrentRow.ProtectedTotal > 0
 			? float(CurrentRow.ProtectedBroken) / CurrentRow.ProtectedTotal
@@ -391,7 +413,7 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 		*/
 		if (Spec.Model == EBenchmarkModel::PHYS) {
 			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
-			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Collapse");
+			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Unexpected Collapse");
 			break;
 		}
 		const int32 ExpectedBrokenNonAnchorCount = Spec.PieceCount - 1;
@@ -413,6 +435,20 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 		break;
 	}
 	case EBenchmarkScenario::LoadRedistribution:
+		switch (Spec.Model) {
+		case EBenchmarkModel::PHYS:
+			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
+			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Unexpected Collapse");
+			break;
+		case EBenchmarkModel::CONN: // Pieces still connected to other anchor only trigger piece should break
+			OutRow.Passed = OutRow.BrokenPieces == 1;
+			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected (no load redistribution)") : TEXT("Unexpected behaviour");
+			break;
+		case EBenchmarkModel::LOAD:
+			OutRow.Passed = OutRow.OverloadFails >= 1 && OutRow.BrokenPieces >= 4; 
+			OutRow.FailureModeNotes = OutRow.Passed ? TEXT("Load redistributed and cascaded") : TEXT("Insufficient cascade");
+			break;
+		} break;
 	case EBenchmarkScenario::ProtectedPreservation:
 		OutRow.Passed = false;
 		OutRow.FailureModeNotes = TEXT("Unimplemented");

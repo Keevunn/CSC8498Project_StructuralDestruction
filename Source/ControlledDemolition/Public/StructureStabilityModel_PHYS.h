@@ -40,9 +40,6 @@ public:
 	int32 GetInitialConstraintCount() const { return InitialConstraintCount; }
 	int32 GetConstraintBreakCount() const { return ConstraintBreakCount; }
 	
-	UPROPERTY(EditAnywhere, Category = "Physics")
-	float PieceMass = 50.f;
-	
 protected:
 	void SpawnConstraintsFromAdjacency();
 	void RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint, ABuildingPiece* PieceA, ABuildingPiece* PieceB);
@@ -50,8 +47,16 @@ protected:
 	void ConfigurePiecesForSetup();
 	void EnablePhysicsOnAllPieces();
 	
+	void DrawConstraintDebug() const;
+	
 	UFUNCTION()
 	void HandleConstraintBroken(int32 ConstraintIndex);
+	
+	UPROPERTY(EditAnywhere, Category = "Physics")
+	float PieceMass = 50.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bDrawConstraintDebug = true;
 	
 	TArray<FBaselineConstraintEdge> ConstraintEdges;
 	

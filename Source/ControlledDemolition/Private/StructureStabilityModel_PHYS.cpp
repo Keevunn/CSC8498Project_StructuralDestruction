@@ -141,6 +141,36 @@ void UStructureStabilityModel_PHYS::EnablePhysicsOnAllPieces() {
 	}
 }
 
+void UStructureStabilityModel_PHYS::DrawConstraintDebug() const {
+	if (!bDrawConstraintDebug) return;
+	
+	const AStructureActor* Structure = OwningStructure.Get();
+	if (!Structure) return;
+	
+	UWorld* World = Structure->GetWorld();
+	if (!World) return;
+	
+	for (const FBaselineConstraintEdge& Edge: ConstraintEdges) {
+		const ABuildingPiece* A = Edge.PieceA.Get();
+		const ABuildingPiece* B = Edge.PieceB.Get();
+		if (!IsValid(A) || !IsValid(B)) continue;
+		
+		const FColor Colour = Edge.bBroken ? FColor::Red : FColor::Green;
+		const float Thickness = Edge.bBroken ? 4.f : 2.f;
+		
+		DrawDebugLine(
+			World, 
+			A->GetPieceCentreLocation(),
+			B->GetPieceCentreLocation(),
+			Colour,
+			false, 
+			2.f,
+			0,
+			Thickness
+		);
+	}
+}
+
 void UStructureStabilityModel_PHYS::HandleConstraintBroken(const int32 ConstraintIndex) {
 	// Cost negligible, doesn't rely on physics index
 	for (FBaselineConstraintEdge& Edge : ConstraintEdges) {
@@ -154,5 +184,6 @@ void UStructureStabilityModel_PHYS::HandleConstraintBroken(const int32 Constrain
 		Edge.Constraint->DestroyComponent();
 		Edge.Constraint = nullptr;
 	}
-		
+	
+	DrawConstraintDebug();
 }

@@ -43,6 +43,7 @@ void ABuildingPiece::BeginPlay()
 		DynamicMaterial = PieceMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
 	
+	SetLOADPropertiesFromRole();
 	
 	if (DynamicMaterial) 
 		DynamicMaterial->SetVectorParameterValue(
@@ -139,6 +140,28 @@ void ABuildingPiece::BreakPiece() {
 	
 	if (GEngine) 
 		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | BROKE"), *GetDebugName());
+}
+
+void ABuildingPiece::SetLOADPropertiesFromRole() {
+	switch (PieceRole) {
+	case EPieceRole::Anchor: // never load source, should be able to hold entire structure
+		Load = 0.f;
+		Capacity = UE_MAX_FLT;
+		break;
+	case EPieceRole::Protected:
+	case EPieceRole::Support:
+		Load = 5.f;
+		Capacity = 50.f;
+		break;
+	case EPieceRole::Load: // load source, never load-bearing so capacity set to max
+		Load = 80.f;
+		Capacity = UE_MAX_FLT;
+		break;
+	case EPieceRole::Objective:
+		Load = 5.f;
+		Capacity = 200.f;
+		break;
+	}
 }
 
 FLinearColor ABuildingPiece::GetRoleDebugColour() const {

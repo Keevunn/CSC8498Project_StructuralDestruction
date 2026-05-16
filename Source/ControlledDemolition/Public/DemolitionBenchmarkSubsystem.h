@@ -31,6 +31,7 @@ private:
 	// Run loop ---------------------------------
 	void EnqueueSweep_AnchorRemoval();
 	void EnqueueSweep_SupportRemoval();
+	void EnqueueSweep_LoadRedistribution();
 	void BeginRun();
 	void EndRun();
 	void StartNextRun();

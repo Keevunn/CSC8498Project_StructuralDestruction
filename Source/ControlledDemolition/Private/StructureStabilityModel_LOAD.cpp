@@ -23,7 +23,7 @@ void UStructureStabilityModel_LOAD::RefreshState() {
 	
 	while (CascadeIters < MaxCascadeIterations) {
 		TMap<TObjectKey<ABuildingPiece>, int32> Layers;
-		BuildLayers(Layers);
+		BuildLayers(Layers); // builds a map of nodes and their distance from nearest anchor
 		
 		TArray<ABuildingPiece*> BreakList;
 		for (ABuildingPiece* Piece : Structure->GetPieces()) {
@@ -49,6 +49,7 @@ void UStructureStabilityModel_LOAD::RefreshState() {
 			Piece->RecordBreak();
 		
 		CascadeIters++;
+		DrawLoadDebug();
 	}
 	
 	const float ElapsedMs = (FPlatformTime::Seconds() - StartTime) * 1000.f;
@@ -99,7 +100,7 @@ void UStructureStabilityModel_LOAD::BuildLayers(TMap<TObjectKey<ABuildingPiece>,
 }
 
 void UStructureStabilityModel_LOAD::AccumulateLoad(const TMap<TObjectKey<ABuildingPiece>, int32>& Layers,
-	TMap<TObjectKey<ABuildingPiece>, float>& OutAccumLoad) {
+	TMap<TObjectKey<ABuildingPiece>, float>& OutAccumLoad) const {
 	const AStructureActor* Structure = OwningStructure.Get();
 	if (!Structure) return;
 	
@@ -142,5 +143,40 @@ void UStructureStabilityModel_LOAD::AccumulateLoad(const TMap<TObjectKey<ABuildi
 			if (float* ExistingLoad = OutAccumLoad.Find(SupporterKey))
 				*ExistingLoad += Share;
 		
+	}
+}
+
+void UStructureStabilityModel_LOAD::DrawLoadDebug() const {
+	if (!bDrawLoadInfoDebug) return;
+	AStructureActor* Structure = OwningStructure.Get();
+	if (!Structure) return;
+	
+	TMap<TObjectKey<ABuildingPiece>, int32> Layers;
+	TMap<TObjectKey<ABuildingPiece>, float> AccumLoad;
+	BuildLayers(Layers);
+	AccumulateLoad(Layers, AccumLoad);
+	
+	for (const ABuildingPiece* Piece : Structure->GetPieces()) {
+		if (!IsValid(Piece)) continue;
+		
+		FColor Colour;
+		if (Piece->IsBroken()) Colour = FColor::Red;
+		else if (Piece->IsAnchor()) Colour = FColor::Blue;
+		else {
+			const float* Found = AccumLoad.Find(TObjectKey<ABuildingPiece>(Piece));
+			const float Load = Found ? *Found : 0.f;
+			const float Capacity = Piece->GetCapacity();
+			const float Stress = Capacity > 0.f ? FMath::Clamp(Load / Capacity, 0.f, 1.f) : 0.f;
+			
+			Colour = FColor::MakeRedToGreenColorFromScalar(1.f - Stress);
+		}
+		
+		DrawDebugSphere(
+			Structure->GetWorld(),
+			Piece->GetPieceCentreLocation(),
+			25.f, 8,
+			Colour,
+			false, 2.f, -1
+		);
 	}
 }

@@ -37,22 +37,6 @@ AStructureActor* UStructureSpawner::SpawnSimpleTower(const UObject* WorldContext
 		else Role = EPieceRole::Support;						// All pieces in between labelled as supports 
 		Piece->SetPieceRole(Role);
 		
-		switch (Role) {
-		case EPieceRole::Anchor:
-			Piece->SetLoad(0.f);
-			Piece->SetCapacity(1e9f); // inf
-			break;
-		case EPieceRole::Support:
-			Piece->SetLoad(5.f);
-			Piece->SetCapacity(100.f); 
-			break;
-		case EPieceRole::Load:
-			Piece->SetLoad(80.f);
-			Piece->SetCapacity(30.f); // load source, not load bearing
-			break;
-		default: break;
-		}
-		
 		Piece->FinishSpawning(PieceXForm);
 		Pieces.Add(Piece);
 	}
@@ -76,7 +60,57 @@ AStructureActor* UStructureSpawner::SpawnSimpleTower(const UObject* WorldContext
 }
 
 AStructureActor* UStructureSpawner::SpawnTwoSupportLoad(const UObject* WorldContextObject, FVector Origin, int32 Seed) {
-	return nullptr;
+	if (!GEngine) return nullptr;
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+	if (!World) return nullptr;
+	
+	struct FPiecePlacement {
+		FVector Offset;
+		EPieceRole Role;
+	};
+	
+	static const TArray<FPiecePlacement> Layout = {
+		{FVector(-100.f, 0, 0.f), EPieceRole::Anchor},		// Anc1
+		{FVector(100.f, 0, 0.f), EPieceRole::Anchor},			// Anc2
+		{FVector(-100.f, 0, 100.f), EPieceRole::Support},		// Sup1
+		{FVector(100.f, 0, 100.f), EPieceRole::Support},		// Sup2
+		{FVector(-100.f, 0, 200.f), EPieceRole::Objective},	// Obj1
+		{FVector(100.f, 0, 200.f), EPieceRole::Objective},	// Obj2
+		{FVector(0.f, 0, 300.f), EPieceRole::Load},			// Load
+	};
+	
+	TArray<ABuildingPiece*> Pieces;
+	Pieces.Reserve(Layout.Num());
+	for (const auto& [Offset, Role] : Layout) {
+		const FTransform Xform(FRotator::ZeroRotator, Origin + Offset);
+		
+		ABuildingPiece* Piece = World->SpawnActorDeferred<ABuildingPiece>(
+			ABuildingPiece::StaticClass(), 
+			Xform, 
+			nullptr, 
+			nullptr, 
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+		);
+		if (!Piece) continue;
+		
+		Piece->SetPieceRole(Role); // Sets the LOAD properties
+		Piece->FinishSpawning(Xform);
+		Pieces.Add(Piece);
+	}
+	
+	const FTransform StructureXForm(FRotator::ZeroRotator, Origin);
+	AStructureActor* Structure = World->SpawnActorDeferred<AStructureActor>(
+		AStructureActor::StaticClass(),
+		StructureXForm,
+		nullptr,
+		nullptr,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+	);
+	if (!Structure) return nullptr;
+	
+	Structure->AssignPieces(Pieces);
+	Structure->FinishSpawning(StructureXForm); // Runs BeginPlay
+	return Structure;
 }
 
 AStructureActor* UStructureSpawner::SpawnBridge(const UObject* WorldContextObject, FVector Origin, int32 NumSpanPieces,

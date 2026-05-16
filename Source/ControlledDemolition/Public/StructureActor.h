@@ -133,7 +133,7 @@ protected:
 	bool bLogStructureMetrics = true;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Structure|Debug")
-	bool bDrawConnectionDebug = true;
+	bool bDrawConnectionDebug = false;
 	
 	// Can inspect the cached values in editor
 	
