@@ -35,9 +35,6 @@ public:
 	// Intentionally empty - no graph to resolve
 	virtual void RefreshState() override {} 
 	
-	// Intentionally empty - breaks handled by constraints 
-	virtual void OnPieceBroken(ABuildingPiece* BrokenPiece) override {}
-	
 	virtual FName GetModelType() const override { return TEXT("PHYS"); }
 	
 	int32 GetInitialConstraintCount() const { return InitialConstraintCount; }

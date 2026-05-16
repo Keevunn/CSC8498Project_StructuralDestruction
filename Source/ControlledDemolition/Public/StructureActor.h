@@ -87,6 +87,7 @@ public:
 	FStructureResult EvaluateStructure() const;
 	
 	void RecordMetrics(float InElapsedMs);
+	void RecordMetrics(int32 Iterations, int32 OverloadFails, float CascadeMs);
 	
 	const TArray<TObjectPtr<ABuildingPiece>>& GetPieces() const { return Pieces; }
 	const TMap<TObjectKey<ABuildingPiece>, TArray<TWeakObjectPtr<ABuildingPiece>>>& GetConnections() const { return Connections; }

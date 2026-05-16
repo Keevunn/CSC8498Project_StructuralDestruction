@@ -53,7 +53,7 @@ void ABuildingPiece::BeginPlay()
 }
 
 void ABuildingPiece::ApplyRoleDefaults() {
-	bAnchored = PieceRole == EPieceRole::Anchor;
+	bIsAnchor = PieceRole == EPieceRole::Anchor;
 	bShouldProtect = PieceRole == EPieceRole::Protected;
 	bIsObjective = PieceRole == EPieceRole::Objective;
 }

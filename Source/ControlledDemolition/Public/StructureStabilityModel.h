@@ -19,7 +19,6 @@ public:
 	virtual void Initialise(AStructureActor* InStructure) PURE_VIRTUAL(Initialise, );
 	
 	virtual void RefreshState() PURE_VIRTUAL(RefreshState, );
-	virtual void OnPieceBroken(ABuildingPiece* BrokenPiece) PURE_VIRTUAL(OnPieceBroken, );
 	
 	virtual FName GetModelType() const PURE_VIRTUAL(GetModelType, return NAME_None;);
 	

@@ -34,8 +34,11 @@ public:
 	
 	EPieceRole GetPieceRole() const				{ return PieceRole;}
 	void SetPieceRole(const EPieceRole InRole)	{ PieceRole = InRole; }
-	void SetLoad(const float InLoad)			{ Load = InLoad; }
-	void SetCapacity(const float InCapacity)	{ Capacity = InCapacity;}
+	
+	float GetLoad() const						{ return Load; }
+	void  SetLoad(const float InLoad)			{ Load = InLoad; }
+	float GetCapacity() const					{ return Capacity; }
+	void  SetCapacity(const float InCapacity)	{ Capacity = InCapacity;}
 	
 	void ApplyRoleDefaults();
 	
@@ -54,7 +57,7 @@ public:
 	
 	void SetSupported(const bool bInSupported) { bSupported = bInSupported; }
 	
-	bool IsAnchored()	const { return bAnchored; }
+	bool IsAnchor()	const { return bIsAnchor; }
 	bool IsSupported()	const { return bSupported; }
 	bool IsBroken()		const { return bBroken; }
 	
@@ -95,7 +98,7 @@ protected:
 	float Capacity = 100.0f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
-	bool bAnchored = false;
+	bool bIsAnchor = false;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Building Piece|Stability Properties")
 	bool bSupported = false;

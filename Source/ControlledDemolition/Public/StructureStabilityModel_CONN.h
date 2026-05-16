@@ -16,7 +16,6 @@ public:
 	virtual void Initialise(AStructureActor* InStructure) override;
 	
 	virtual void RefreshState() override;
-	virtual void OnPieceBroken(ABuildingPiece* BrokenPiece) override {}
 	
 	virtual FName GetModelType() const override { return TEXT("CONN"); }
 	

@@ -68,6 +68,13 @@ void AStructureActor::RecordMetrics(const float InElapsedMs) {
 	RuntimeMetrics.PieceCount = Pieces.Num();
 }
 
+void AStructureActor::RecordMetrics(const int32 Iterations, const int32 OverloadFails, const float CascadeMs) {
+	RecordMetrics(CascadeMs); // TODO may reevaluate
+	RuntimeMetrics.CascadeIterations = Iterations;
+	RuntimeMetrics.OverloadFails = OverloadFails;
+	RuntimeMetrics.CascadeMs = CascadeMs;
+}
+
 FString AStructureActor::GetDebugName() const {
 	if (!DebugStructureName.IsNone()) return DebugStructureName.ToString();
 	
@@ -258,8 +265,6 @@ bool AStructureActor::HasMetObjectiveCondition() const {
 void AStructureActor::HandlePieceBroken(ABuildingPiece* BrokenPiece) {
 	if (!IsValid(BrokenPiece)) return;
 	
-	if (StabilityModel)
-		StabilityModel->OnPieceBroken(BrokenPiece);
 	MarkStabilityDirty(); 
 	
 	if (bAutoRefreshOnBrokenPiece)

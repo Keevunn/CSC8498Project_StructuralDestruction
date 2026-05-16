@@ -28,7 +28,7 @@ void UStructureStabilityModel_CONN::ReconfigureSupport() {
 	bool bFoundAnchor = false;
 	
 	for (ABuildingPiece* Piece : Pieces) {
-		if (!IsValid(Piece) || !Piece->IsAnchored() || Piece->IsBroken()) 
+		if (!IsValid(Piece) || !Piece->IsAnchor() || Piece->IsBroken()) 
 			continue;
 		
 		// Unbroken Anchors supported set to true
@@ -92,5 +92,5 @@ void UStructureStabilityModel_CONN::DetachUnsupportedPieces() {
 	const auto& Pieces = OwningStructure->GetPieces();
 	
 	for (ABuildingPiece* Piece : Pieces)
-		if (IsValid(Piece) && !Piece->IsBroken() && !Piece->IsSupported() && !Piece->IsAnchored()) Piece->RecordBreak();
+		if (IsValid(Piece) && !Piece->IsBroken() && !Piece->IsSupported() && !Piece->IsAnchor()) Piece->RecordBreak();
 }

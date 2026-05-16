@@ -13,12 +13,18 @@ class CONTROLLEDDEMOLITION_API UStructureStabilityModel_LOAD : public UStructure
 	GENERATED_BODY()
 	
 public:
-	virtual void Initialise(AStructureActor* InStructure) override {}
+	virtual void Initialise(AStructureActor* InStructure) override;
 	
-	virtual void RefreshState() override {}
-	virtual void OnPieceBroken(ABuildingPiece* BrokenPiece) override {}
+	virtual void RefreshState() override;
 	
 	virtual FName GetModelType() const override { return TEXT("LOAD"); }
 	
+private:
+	void BuildLayers(TMap<TObjectKey<ABuildingPiece>, int32>& OutLayers) const;
+	void AccumulateLoad(const TMap<TObjectKey<ABuildingPiece>, int32>& Layers, TMap<TObjectKey<ABuildingPiece>, float>& OutAccumLoad);
 	
+	UPROPERTY(EditAnywhere, Category = "Load Propagation", meta = (ClampMin = "1"))
+	int32 MaxCascadeIterations = 10;
+	
+	bool bRefreshActive = false;
 };

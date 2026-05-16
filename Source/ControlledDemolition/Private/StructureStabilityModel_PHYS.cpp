@@ -137,7 +137,7 @@ void UStructureStabilityModel_PHYS::EnablePhysicsOnAllPieces() {
 		UStaticMeshComponent* Mesh = Piece->GetPieceMesh();
 		if (!IsValid(Mesh)) continue;
 	
-		Mesh->SetSimulatePhysics(!Piece->IsAnchored());
+		Mesh->SetSimulatePhysics(!Piece->IsAnchor());
 	}
 }
 
