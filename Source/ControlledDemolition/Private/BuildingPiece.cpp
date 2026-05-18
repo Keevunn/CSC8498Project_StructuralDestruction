@@ -64,7 +64,7 @@ void ABuildingPiece::ApplyRoleDefaults() {
 	case EPieceRole::Protected:
 		Load = 5.f;
 		Capacity = 50.f;
-		MaxHealth = 500.f;
+		MaxHealth = 150.f;
 		bShouldProtect = true;
 		break;
 	case EPieceRole::Support:

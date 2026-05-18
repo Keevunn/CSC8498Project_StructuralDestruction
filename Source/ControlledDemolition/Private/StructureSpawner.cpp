@@ -41,22 +41,7 @@ AStructureActor* UStructureSpawner::SpawnSimpleTower(const UObject* WorldContext
 		Pieces.Add(Piece);
 	}
 	
-	// Spawns actor, doesn't run BeginPlay yet
-	const FTransform StructureXForm(FRotator::ZeroRotator, AnchorPos);
-	AStructureActor* Structure = World->SpawnActorDeferred<AStructureActor>(
-		AStructureActor::StaticClass(),
-		StructureXForm,
-		nullptr,
-		nullptr,
-		ESpawnActorCollisionHandlingMethod::AlwaysSpawn
-	);
-	if (!Structure) return nullptr;
-	
-	Structure->AssignPieces(Pieces);
-	// Can set stability model and debug name here
-	
-	Structure->FinishSpawning(StructureXForm); // Runs BeginPlay
-	return Structure;
+	return DeferredStructureSetup(World, Pieces, AnchorPos);
 }
 
 AStructureActor* UStructureSpawner::SpawnTwoSupportLoad(const UObject* WorldContextObject, FVector Origin, int32 Seed) {
@@ -98,7 +83,62 @@ AStructureActor* UStructureSpawner::SpawnTwoSupportLoad(const UObject* WorldCont
 		Pieces.Add(Piece);
 	}
 	
+	return DeferredStructureSetup(World, Pieces, Origin);
+}
+
+AStructureActor* UStructureSpawner::SpawnBridge(const UObject* WorldContextObject, const FVector Origin, const int32 BridgeWidth,
+	int32 Seed) {
+	if (!GEngine || BridgeWidth < 3) return nullptr; // should be >= 3 to have objectives and protected pieces
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+	if (!World) return nullptr;
+	
+	struct FPiecePlacement {
+		FVector Offset;
+		EPieceRole Role;
+	};
+	constexpr float Spacing = 100.f;
+	TArray<FPiecePlacement> Layout;
+	Layout.Reserve((int32)(BridgeWidth * 1.5) - 1);
+	
+	// Anchors at ground level
+	Layout.Add({FVector(0.f, 0.f, 0.f), EPieceRole::Anchor});
+	Layout.Add({FVector(BridgeWidth * Spacing, 0.f, 0.f), EPieceRole::Anchor});
+	
+	// Deck of alternating objectives and supports
+	for (int i = 1; i < BridgeWidth; ++i) {
+		const EPieceRole Role = i % 2 == 1 ? EPieceRole::Support : EPieceRole::Objective; // Supports in odd positions, Objectives in even
+		Layout.Add({FVector(i * Spacing, 0.f, Spacing), Role});
+	}
+	
+	// Layer of protected pieces above objectives
+	for (int i = 2; i < BridgeWidth; i += 2)
+		Layout.Add({FVector(i * Spacing, 0.f, 2 * Spacing), EPieceRole::Protected});
+	
+	TArray<ABuildingPiece*> Pieces;
+	Pieces.Reserve(Layout.Num());
+	for (const auto& [Offset, Role] : Layout) {
+		const FTransform Xform(FRotator::ZeroRotator, Origin + Offset);
+		
+		ABuildingPiece* Piece = World->SpawnActorDeferred<ABuildingPiece>(
+			ABuildingPiece::StaticClass(), 
+			Xform, 
+			nullptr, 
+			nullptr, 
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+		);
+		if (!Piece) continue;
+		
+		Piece->SetPieceRole(Role); // Sets the LOAD properties
+		Piece->FinishSpawning(Xform);
+		Pieces.Add(Piece);
+	}
+	
+	return DeferredStructureSetup(World, Pieces, Origin);
+}
+
+AStructureActor* UStructureSpawner::DeferredStructureSetup(UWorld* World, const TArray<ABuildingPiece*>& Pieces , const FVector& Origin) {
 	const FTransform StructureXForm(FRotator::ZeroRotator, Origin);
+	// Spawns actor, doesn't run BeginPlay yet
 	AStructureActor* Structure = World->SpawnActorDeferred<AStructureActor>(
 		AStructureActor::StaticClass(),
 		StructureXForm,
@@ -109,11 +149,7 @@ AStructureActor* UStructureSpawner::SpawnTwoSupportLoad(const UObject* WorldCont
 	if (!Structure) return nullptr;
 	
 	Structure->AssignPieces(Pieces);
+	Structure->SetRunningBenchmark(true);
 	Structure->FinishSpawning(StructureXForm); // Runs BeginPlay
 	return Structure;
-}
-
-AStructureActor* UStructureSpawner::SpawnBridge(const UObject* WorldContextObject, FVector Origin, int32 NumSpanPieces,
-	int32 Seed) {
-	return nullptr;
 }

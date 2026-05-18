@@ -95,6 +95,8 @@ public:
 	FString GetDebugName() const;
 	const FStructureRuntimeMetrics& GetRuntimeMetrics() const { return RuntimeMetrics; }
 	
+	void SetRunningBenchmark(bool InStatus) { bRunningBenchmark = InStatus; }
+	
 protected:		
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -156,4 +158,6 @@ protected:
 	
 	int32 LastDetectedConnectionCount = 0;
 	int32 LastSupportedPieceCount = 0;
+	
+	bool bRunningBenchmark = false;
 };

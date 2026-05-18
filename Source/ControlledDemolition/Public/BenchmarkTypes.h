@@ -78,5 +78,5 @@ struct FBenchmarkRow {
 	float	DestructionRatio		= 0.f;	// Fraction of broken pieces out of all destructible pieces
 	float	ProtectedFailureRatio	= 0.f;	// Fraction of protected broken pieces out of all protected pieces (0 if no protected)
 	bool	Passed					= false;// Scenario-specific success boolean
-	FString	FailureModeNotes;				// Categorical label (see UDemolitionBenchmarkSubsystem::EvaluatePassFail())
+	FString	OutcomeLabel;					// Categorical label (see UDemolitionBenchmarkSubsystem::EvaluatePassFail())
 };

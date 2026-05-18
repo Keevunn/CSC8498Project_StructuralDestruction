@@ -4,6 +4,7 @@
 #include "DemolitionBenchmarkSubsystem.h"
 
 #include "BuildingPiece.h"
+#include "ChargeActor.h"
 #include "StructureActor.h"
 #include "StructureStabilityModel_CONN.h"
 #include "StructureStabilityModel_PHYS.h"
@@ -95,6 +96,7 @@ void UDemolitionBenchmarkSubsystem::RunSweep(const int32 Sweep) {
 	if (Sweep == 1) EnqueueSweep_AnchorRemoval();
 	if (Sweep == 2) EnqueueSweep_SupportRemoval();
 	if (Sweep == 3) EnqueueSweep_LoadRedistribution();
+	if (Sweep == 4) EnqueueSweep_ProtectedPreservation();
 	
 	StartNextRun();
 }
@@ -150,6 +152,24 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
 			Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
 			Queue.Enqueue(Spec);
 		}
+}
+
+void UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation() {
+	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
+	const TArray<int32> Widths {3, 5};
+	constexpr int32 Repeats = 3;
+	
+	for (const EBenchmarkModel Model : Models)
+		for (const int32 BridgeWidth : Widths)
+			for (int32 i = 0; i < Repeats; i++) {
+				FBenchmarkRunSpec Spec;
+				Spec.Model = Model;
+				Spec.Scenario = EBenchmarkScenario::ProtectedPreservation;
+				Spec.PieceCount = BridgeWidth; 
+				Spec.RunIndex = i;
+				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), BridgeWidth), i);
+				Queue.Enqueue(Spec);
+			}
 }
 
 void UDemolitionBenchmarkSubsystem::BeginRun() {
@@ -210,7 +230,7 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 		CurrentRow.TriggerEventMs = BreakPieceByRole(Structure, EPieceRole::Support, CurrentRng);
 		break;
 	case EBenchmarkScenario::ProtectedPreservation:
-		CurrentRow.TriggerEventMs = ExplodeAtRole(Structure, EPieceRole::Objective, 200.f, 250.f, CurrentRng);
+		CurrentRow.TriggerEventMs = ExplodeAtRole(Structure, EPieceRole::Objective, CurrentRng);
 		break;
 	
 	}
@@ -309,16 +329,29 @@ float UDemolitionBenchmarkSubsystem::BreakPieceByRole(AStructureActor* Structure
 	return (FPlatformTime::Seconds() - StartTime) * 1000.f;
 }
 
-float UDemolitionBenchmarkSubsystem::ExplodeAtRole(AStructureActor* Structure, const EPieceRole Role, const float Radius,
-	const float MaxDamage, const FRandomStream& Rng) {
+float UDemolitionBenchmarkSubsystem::ExplodeAtRole(AStructureActor* Structure, const EPieceRole Role, const FRandomStream& Rng) {
 	const double StartTime = FPlatformTime::Seconds();
 	ABuildingPiece* Target = PickByRole(Structure, Role, Rng);
 	if (!Target) return 0.f;
-		
-	const FVector Origin = Target->GetPieceCentreLocation();
-	for (ABuildingPiece* Piece : Structure->GetPieces())
-		if (IsValid(Piece) && !Piece->IsBroken())
-			Piece->ApplyExplosionDamage(Origin, Radius, MaxDamage);
+	const FVector SurfaceOffset {0.f, -52.5f, 0.f}; // CHEAT: placing charge on surface of target piece, assumes 100x100x100 cube
+	const FVector Origin = Target->GetPieceCentreLocation() + SurfaceOffset;
+	
+	UWorld* World = GetGameInstance()->GetWorld();
+	if (!World) return 0.f;
+	
+	const FTransform Xform(FRotator::ZeroRotator, Origin);
+	AChargeActor* Charge = World->SpawnActorDeferred<AChargeActor>(
+		AChargeActor::StaticClass(),
+		Xform, nullptr, nullptr,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+	);
+	if (!Charge) return 0.f;
+	
+	Charge->SetFuseTime(0.5f); 
+	Charge->SetExplosionRadius(100.f);
+	Charge->SetExplosionImpulseStrength(1000.f);
+	
+	Charge->FinishSpawning(Xform);
 		
 	return (FPlatformTime::Seconds() - StartTime) * 1000.f;
 }
@@ -362,7 +395,7 @@ void UDemolitionBenchmarkSubsystem::EnsureFileOpen() {
 			"PeakFrameMs,AverageFrameMs,FramesObserved,"
 			"BrokenPieces,SupportedPieces,ProtectedTotal,ProtectedBroken,"
 			"ObjectiveTotal,ObjectiveBroken,AnchorTotal,AnchorBroken,LoadTotal,LoadBroken,ConstraintBreaks,"
-			"CascadeIterations,OverloadFails,DestructionRatio,ProtectedFailureRatio,Passed,FailureModeNotes\n"
+			"CascadeIterations,OverloadFails,DestructionRatio,ProtectedFailureRatio,Passed,OutcomeLabel\n"
 		);
 		const FTCHARToUTF8 Utf8(*Header);
 		CSVHandle->Write((const uint8*)Utf8.Get(), Utf8.Length());
@@ -387,7 +420,7 @@ void UDemolitionBenchmarkSubsystem::WriteRow(const FBenchmarkRow& Row) {
 		Row.BrokenPieces, Row.SupportedPieces, Row.ProtectedTotal, Row.ProtectedBroken, 
 		Row.ObjectiveTotal, Row.ObjectiveBroken, Row.AnchorTotal, Row.AnchorBroken, Row.LoadTotal, Row.LoadBroken, Row.ConstraintBreaks,
 		Row.CascadeIterations, Row.OverloadFails, Row.DestructionRatio, Row.ProtectedFailureRatio,
-		Row.Passed ? TEXT("true") : TEXT("false"), *Row.FailureModeNotes
+		Row.Passed ? TEXT("PASS") : TEXT("FAIL"), *Row.OutcomeLabel
 	);
 	
 	const FTCHARToUTF8 Utf8(*Line);
@@ -400,7 +433,7 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 	
 	if (OutRow.ProtectedBroken > 0) {
 		OutRow.Passed = false;
-		OutRow.FailureModeNotes = TEXT("Protected pieces broken");
+		OutRow.OutcomeLabel = TEXT("ProtectedBroken");
 		return;
 	}
 	
@@ -413,45 +446,45 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 		*/
 		if (Spec.Model == EBenchmarkModel::PHYS) {
 			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
-			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Unexpected Collapse");
+			OutRow.OutcomeLabel = OutRow.Passed	? TEXT("ExpectedNoCollapse") : TEXT("UnexpectedCollapse");
 			break;
 		}
 		const int32 ExpectedBrokenNonAnchorCount = Spec.PieceCount - 1;
 		OutRow.Passed = OutRow.BrokenPieces - OutRow.AnchorBroken == ExpectedBrokenNonAnchorCount;
-		OutRow.FailureModeNotes = OutRow.Passed ? TEXT("Collapse as expected") : TEXT("No collapse");
+		OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ExpectedCollapse") : TEXT("NoCollapse");
 		break;
 	}
 	case EBenchmarkScenario::SupportRemoval:
 	{
 		if (Spec.Model == EBenchmarkModel::PHYS) {
 			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
-			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Unexpected collapse");
+			OutRow.OutcomeLabel = OutRow.Passed	? TEXT("ExpectedNoCollapse") : TEXT("UnexpectedCollapse");
 			break;
 		}
 		// Pieces added to array such that the anchor is at the bottom (i=0) and others added in height order (ascending)
 		const int32 ExpectedBrokenCount = Spec.PieceCount - TriggeredPieceIndex;
 		OutRow.Passed = OutRow.BrokenPieces == ExpectedBrokenCount;
-		OutRow.FailureModeNotes = OutRow.Passed ? TEXT("Collapse as expected") : TEXT("Unexpected no collapse");
+		OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ExpectedCollapse") : TEXT("NoCollapse");
 		break;
 	}
 	case EBenchmarkScenario::LoadRedistribution:
 		switch (Spec.Model) {
 		case EBenchmarkModel::PHYS:
 			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
-			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected") : TEXT("Unexpected Collapse");
+			OutRow.OutcomeLabel = OutRow.Passed	? TEXT("ExpectedNoCollapse") : TEXT("UnexpectedCollapse");
 			break;
 		case EBenchmarkModel::CONN: // Pieces still connected to other anchor only trigger piece should break
 			OutRow.Passed = OutRow.BrokenPieces == 1;
-			OutRow.FailureModeNotes = OutRow.Passed	? TEXT("No collapse as expected (no load redistribution)") : TEXT("Unexpected behaviour");
+			OutRow.OutcomeLabel = OutRow.Passed	? TEXT("ExpectedNoLoadCascade") : TEXT("UnexpectedConnBehaviour");
 			break;
 		case EBenchmarkModel::LOAD:
 			OutRow.Passed = OutRow.OverloadFails >= 1 && OutRow.BrokenPieces >= 4; 
-			OutRow.FailureModeNotes = OutRow.Passed ? TEXT("Load redistributed and cascaded") : TEXT("Insufficient cascade");
+			OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ExpectedLoadCascade") : TEXT("InsufficientLoadCascade");
 			break;
 		} break;
 	case EBenchmarkScenario::ProtectedPreservation:
-		OutRow.Passed = false;
-		OutRow.FailureModeNotes = TEXT("Unimplemented");
+		OutRow.Passed = OutRow.ObjectiveBroken >= 1;
+		OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ObjectiveDestroyedProtectedPreserved") : TEXT("ObjectiveSurvived");
 		break;
 	}
 	

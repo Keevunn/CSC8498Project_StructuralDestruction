@@ -9,13 +9,17 @@
 class USphereComponent;
 
 UCLASS()
-class CONTROLLEDDEMOLITION_API AChargeActor : public AActor
-{
+class CONTROLLEDDEMOLITION_API AChargeActor : public AActor {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
 	AChargeActor();
+	
+	void SetFuseTime(const float InFuseTime)				{ FuseTime = InFuseTime; }
+	void SetExplosionRadius(const float Radius)				{ ExplosionRadius = Radius; }
+	void SetExplosionImpulseStrength(const float Strength)	{ ExplosionImpulseStrength = Strength; }
+	void SetExplosionDamage(const float Damage)				{ ExplosionDamage = Damage; }
 
 protected:
 	// Called when the game starts or when spawned
@@ -31,9 +35,6 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> ChargeMesh;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<USphereComponent> ExplosionRadiusSphere;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Charge Information")
 	float FuseTime = 2.0f;

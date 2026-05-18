@@ -165,7 +165,7 @@ void UStructureStabilityModel_PHYS::DrawConstraintDebug() const {
 			Colour,
 			false, 
 			2.f,
-			0,
+			-1,
 			Thickness
 		);
 	}

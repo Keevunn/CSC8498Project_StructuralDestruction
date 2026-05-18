@@ -23,11 +23,6 @@ AChargeActor::AChargeActor()
 	ChargeMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ChargeMesh->SetSimulatePhysics(false);
 	
-	ExplosionRadiusSphere = CreateDefaultSubobject<USphereComponent>(TEXT("ExplosionRadiusSphere"));
-	ExplosionRadiusSphere->SetupAttachment(SceneRoot);
-	ExplosionRadiusSphere->SetSphereRadius(ExplosionRadius);
-	ExplosionRadiusSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	ExplosionRadiusSphere->SetHiddenInGame(false);
 }
 
 // Called when the game starts or when spawned
@@ -35,18 +30,28 @@ void AChargeActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	ExplosionRadiusSphere->SetSphereRadius(ExplosionRadius);
+	DrawDebugSphere(
+			GetWorld(),
+			GetActorLocation(),
+			ExplosionRadius, 8,
+			FColor::Red,
+			false, FuseTime, -1
+		);
 	
 	UWorld* World = GetWorld();
 	if (!World) return;
 	
-	World->GetTimerManager().SetTimer(
-		FuseTimerHandle, 
-		this,
-		&AChargeActor::Explode,
-		FuseTime,
-		false
-	);
+	if (FuseTime > 0.f)
+		World->GetTimerManager().SetTimer(
+			FuseTimerHandle, 
+			this,
+			&AChargeActor::Explode,
+			FuseTime,
+			false
+		);
+	else 
+		Explode();
+	
 	
 }
 
@@ -83,19 +88,19 @@ void AChargeActor::Explode() {
 			UPrimitiveComponent* PrimitiveComponent = Result.GetComponent();
 			ABuildingPiece* BuildingPiece = Cast<ABuildingPiece>(HitActor);
 			AStructureActor* Structure = nullptr;
-			bool bIsBModel = false;
+			bool bIsPHYS = false;
 			
 			if (IsValid(BuildingPiece)) {
 				Structure = BuildingPiece->GetOwningStructure();
 				
 				if (IsValid(Structure)) {
 					AffectedStructures.Add(TObjectKey<AStructureActor>(Structure));
-					bIsBModel = Structure->GetStabilityModelType() == FName("PHYS");
+					bIsPHYS = Structure->GetStabilityModelType() == FName("PHYS");
 				}
 			}
 			
 			// If valid building piece, apply damage first... 
-			const bool bShouldApplyDamage = IsValid(BuildingPiece) && IsValid(Structure) && !bIsBModel && !DamagedPieces.Contains(BuildingPiece);
+			const bool bShouldApplyDamage = IsValid(BuildingPiece) && IsValid(Structure) && !bIsPHYS && !DamagedPieces.Contains(BuildingPiece);
 			if (bShouldApplyDamage) { // Physics-only pieces shouldn't call BreakPiece
 				DamagedPieces.Add(BuildingPiece);
 
@@ -106,7 +111,7 @@ void AChargeActor::Explode() {
 			// If physics object, apply impulse
 			const bool bShouldApplyImpulse = PrimitiveComponent && PrimitiveComponent->IsSimulatingPhysics() &&
 					!ImpulsedComponents.Contains(PrimitiveComponent) && 
-					(!IsValid(BuildingPiece) || bIsBModel || BuildingPiece->IsBroken());
+					(!IsValid(BuildingPiece) || bIsPHYS || BuildingPiece->IsBroken());
 			
 			if (bShouldApplyImpulse) {
 				ImpulsedComponents.Add(PrimitiveComponent);

@@ -32,6 +32,7 @@ private:
 	void EnqueueSweep_AnchorRemoval();
 	void EnqueueSweep_SupportRemoval();
 	void EnqueueSweep_LoadRedistribution();
+	void EnqueueSweep_ProtectedPreservation();
 	void BeginRun();
 	void EndRun();
 	void StartNextRun();
@@ -45,7 +46,7 @@ private:
 	float BreakPieceByRole(AStructureActor* Structure, EPieceRole Role, const FRandomStream& Rng);
 	
 	// Applies explosion centered on piece matching given role
-	float ExplodeAtRole(AStructureActor* Structure, EPieceRole Role, const float Radius, const float MaxDamage, const FRandomStream& Rng);
+	float ExplodeAtRole(AStructureActor* Structure, EPieceRole Role, const FRandomStream& Rng);
 	
 	ABuildingPiece* PickByRole(const AStructureActor* Structure, const EPieceRole Role, const FRandomStream& Rng);
 	

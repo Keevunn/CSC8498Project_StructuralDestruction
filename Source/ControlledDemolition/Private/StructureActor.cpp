@@ -286,7 +286,7 @@ void AStructureActor::RefreshStructureState() {
 	if (bLogStructureMetrics)
 		LogStructureMetrics();
 	
-	CheckJobConditions();
+	if (!bRunningBenchmark) CheckJobConditions();
 }
 
 void AStructureActor::DrawConnectionDebug() const {

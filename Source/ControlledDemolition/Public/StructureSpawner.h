@@ -7,6 +7,7 @@
 #include "StructureSpawner.generated.h"
 
 
+class ABuildingPiece;
 class AStructureActor;
 
 UCLASS()
@@ -22,5 +23,8 @@ public:
 	static AStructureActor* SpawnTwoSupportLoad(const UObject* WorldContextObject, FVector Origin, int32 Seed);
 	
 	UFUNCTION(BlueprintCallable, Category="Benchmark|Spawner", meta=(WorldContextObject))
-	static AStructureActor* SpawnBridge(const UObject* WorldContextObject, FVector Origin, int32 NumSpanPieces, int32 Seed);
+	static AStructureActor* SpawnBridge(const UObject* WorldContextObject, FVector Origin, int32 BridgeWidth, int32 Seed);
+	
+private:
+	static AStructureActor* DeferredStructureSetup(UWorld* World, const TArray<ABuildingPiece*>& Pieces, const FVector& Origin);
 };
