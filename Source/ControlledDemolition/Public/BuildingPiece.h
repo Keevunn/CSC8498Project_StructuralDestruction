@@ -33,7 +33,7 @@ public:
 	virtual void BeginPlay() override;
 	
 	EPieceRole GetPieceRole() const				{ return PieceRole;}
-	void SetPieceRole(const EPieceRole InRole)	{ PieceRole = InRole; SetLOADPropertiesFromRole(); }
+	void SetPieceRole(const EPieceRole InRole)	{ PieceRole = InRole; ApplyRoleDefaults(); }
 	
 	float GetLoad() const						{ return Load; }
 	void  SetLoad(const float InLoad)			{ Load = InLoad; }
@@ -72,7 +72,6 @@ public:
 protected:
 	void BreakPiece();
 	
-	void SetLOADPropertiesFromRole();
 	FLinearColor GetRoleDebugColour() const;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

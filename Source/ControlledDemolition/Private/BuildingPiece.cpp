@@ -23,7 +23,7 @@ ABuildingPiece::ABuildingPiece()
 	PieceMesh->SetSimulatePhysics(false);
 	
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(
-	TEXT("/Game/Meshes/SM_BuildingPiece_Box"));
+		TEXT("/Game/Meshes/SM_BuildingPiece_Box"));
 	if (CubeMeshAsset.Succeeded())
 		PieceMesh->SetStaticMesh(CubeMeshAsset.Object);
 }
@@ -33,8 +33,8 @@ void ABuildingPiece::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	CurrentHealth = MaxHealth;
 	ApplyRoleDefaults();
+	CurrentHealth = MaxHealth;
 	
 	if (PieceMesh) {
 		// reliably set collision channel
@@ -42,8 +42,6 @@ void ABuildingPiece::BeginPlay()
 		PieceMesh->SetCollisionResponseToAllChannels(ECR_Block);
 		DynamicMaterial = PieceMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
-	
-	SetLOADPropertiesFromRole();
 	
 	if (DynamicMaterial) 
 		DynamicMaterial->SetVectorParameterValue(
@@ -53,10 +51,39 @@ void ABuildingPiece::BeginPlay()
 	
 }
 
+
+
 void ABuildingPiece::ApplyRoleDefaults() {
-	bIsAnchor = PieceRole == EPieceRole::Anchor;
-	bShouldProtect = PieceRole == EPieceRole::Protected;
-	bIsObjective = PieceRole == EPieceRole::Objective;
+	switch (PieceRole) {
+	case EPieceRole::Anchor: // never load source, should be able to hold entire structure
+		Load = 0.f;
+		Capacity = UE_MAX_FLT;
+		MaxHealth = 100.f;
+		bIsAnchor = true;
+		break;
+	case EPieceRole::Protected:
+		Load = 5.f;
+		Capacity = 50.f;
+		MaxHealth = 500.f;
+		bShouldProtect = true;
+		break;
+	case EPieceRole::Support:
+		Load = 5.f;
+		Capacity = 50.f;
+		MaxHealth = 100.f;
+		break;
+	case EPieceRole::Load: // load source, never load-bearing so capacity set to max
+		Load = 80.f;
+		Capacity = UE_MAX_FLT;
+		MaxHealth = 100.f;
+		break;
+	case EPieceRole::Objective:
+		Load = 5.f;
+		Capacity = 200.f;
+		MaxHealth = 100.f;
+		bIsObjective = true;
+		break;
+	}
 }
 
 void ABuildingPiece::ApplyExplosionDamage(const FVector& ExplosionOrigin, float ExplosionRadius, float MaxDamage) {
@@ -140,28 +167,6 @@ void ABuildingPiece::BreakPiece() {
 	
 	if (GEngine) 
 		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | BROKE"), *GetDebugName());
-}
-
-void ABuildingPiece::SetLOADPropertiesFromRole() {
-	switch (PieceRole) {
-	case EPieceRole::Anchor: // never load source, should be able to hold entire structure
-		Load = 0.f;
-		Capacity = UE_MAX_FLT;
-		break;
-	case EPieceRole::Protected:
-	case EPieceRole::Support:
-		Load = 5.f;
-		Capacity = 50.f;
-		break;
-	case EPieceRole::Load: // load source, never load-bearing so capacity set to max
-		Load = 80.f;
-		Capacity = UE_MAX_FLT;
-		break;
-	case EPieceRole::Objective:
-		Load = 5.f;
-		Capacity = 200.f;
-		break;
-	}
 }
 
 FLinearColor ABuildingPiece::GetRoleDebugColour() const {
