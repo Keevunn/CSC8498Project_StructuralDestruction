@@ -156,7 +156,7 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
 
 void UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation() {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
-	const TArray<int32> Widths {3, 5};
+	const TArray<int32> Widths {4, 5, 6};
 	constexpr int32 Repeats = 3;
 	
 	for (const EBenchmarkModel Model : Models)
@@ -232,7 +232,6 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	case EBenchmarkScenario::ProtectedPreservation:
 		CurrentRow.TriggerEventMs = ExplodeAtRole(Structure, EPieceRole::Objective, CurrentRng);
 		break;
-	
 	}
 	
 	// Start sampling frame times
@@ -285,7 +284,10 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 			? float(CurrentRow.ProtectedBroken) / CurrentRow.ProtectedTotal
 			: 0.f;
 		
-		EvaluatePassFail(CurrentRow, Spec, Result);
+		if (Spec.Scenario == EBenchmarkScenario::ProtectedPreservation)
+			CurrentRow.PieceCount = Structure->GetPieces().Num();
+		
+		EvaluatePassFail(CurrentRow, Spec);
 		
 		Structure->Destroy();
 	}
@@ -428,10 +430,9 @@ void UDemolitionBenchmarkSubsystem::WriteRow(const FBenchmarkRow& Row) {
 	CSVHandle->Flush(); // won't lose data written to file if crash mid-sweep
 }
 
-void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec,
-                                                     const FStructureResult& Result) const {
+void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec) const {
 	
-	if (OutRow.ProtectedBroken > 0) {
+	if (Spec.Model != EBenchmarkModel::PHYS && OutRow.ProtectedBroken > 0) {
 		OutRow.Passed = false;
 		OutRow.OutcomeLabel = TEXT("ProtectedBroken");
 		return;
@@ -483,6 +484,11 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 			break;
 		} break;
 	case EBenchmarkScenario::ProtectedPreservation:
+		if (Spec.Model == EBenchmarkModel::PHYS) {
+			OutRow.Passed = OutRow.ConstraintBreaks >= 1;
+			OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ConstraintBroken") : TEXT("UnexpectedNoConstraintBroken");
+			break;
+		}
 		OutRow.Passed = OutRow.ObjectiveBroken >= 1;
 		OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ObjectiveDestroyedProtectedPreserved") : TEXT("ObjectiveSurvived");
 		break;

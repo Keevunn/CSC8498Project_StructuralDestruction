@@ -33,7 +33,7 @@ public:
 	virtual void Initialise(AStructureActor* InStructure) override;
 	
 	// Intentionally empty - no graph to resolve
-	virtual void RefreshState() override {} 
+	virtual void RefreshState() override { DrawConstraintDebug(); } 
 	
 	virtual FName GetModelType() const override { return TEXT("PHYS"); }
 	

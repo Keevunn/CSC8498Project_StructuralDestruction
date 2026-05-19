@@ -55,7 +55,7 @@ private:
 	void WriteRow(const FBenchmarkRow& Row);
 	
 	// Pass/Fail dispatch -----------------------
-	void EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec, const FStructureResult& Result) const;
+	void EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec) const;
 	
 	// Console command handler ------------------
 	void HandleConsoleCommand(const TArray<FString>& Args);

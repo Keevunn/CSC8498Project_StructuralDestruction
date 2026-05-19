@@ -55,12 +55,12 @@ AStructureActor* UStructureSpawner::SpawnTwoSupportLoad(const UObject* WorldCont
 	};
 	
 	static const TArray<FPiecePlacement> Layout = {
-		{FVector(-100.f, 0, 0.f), EPieceRole::Anchor},		// Anc1
+		{FVector(-100.f, 0, 0.f), EPieceRole::Anchor},			// Anc1
 		{FVector(100.f, 0, 0.f), EPieceRole::Anchor},			// Anc2
 		{FVector(-100.f, 0, 100.f), EPieceRole::Support},		// Sup1
 		{FVector(100.f, 0, 100.f), EPieceRole::Support},		// Sup2
 		{FVector(-100.f, 0, 200.f), EPieceRole::Objective},	// Obj1
-		{FVector(100.f, 0, 200.f), EPieceRole::Objective},	// Obj2
+		{FVector(100.f, 0, 200.f), EPieceRole::Objective},		// Obj2
 		{FVector(0.f, 0, 300.f), EPieceRole::Load},			// Load
 	};
 	
@@ -98,20 +98,20 @@ AStructureActor* UStructureSpawner::SpawnBridge(const UObject* WorldContextObjec
 	};
 	constexpr float Spacing = 100.f;
 	TArray<FPiecePlacement> Layout;
-	Layout.Reserve((int32)(BridgeWidth * 1.5) - 1);
+	Layout.Reserve((int32)(BridgeWidth * 1.5) - 1); // Note: calculation wrong for odd widths
 	
 	// Anchors at ground level
 	Layout.Add({FVector(0.f, 0.f, 0.f), EPieceRole::Anchor});
-	Layout.Add({FVector(BridgeWidth * Spacing, 0.f, 0.f), EPieceRole::Anchor});
+	Layout.Add({FVector((BridgeWidth - 1) * Spacing, 0.f, 0.f), EPieceRole::Anchor});
 	
 	// Deck of alternating objectives and supports
-	for (int i = 1; i < BridgeWidth; ++i) {
-		const EPieceRole Role = i % 2 == 1 ? EPieceRole::Support : EPieceRole::Objective; // Supports in odd positions, Objectives in even
+	for (int i = 1; i < BridgeWidth - 1; ++i) {
+		const EPieceRole Role = i % 2 == 0 ? EPieceRole::Support : EPieceRole::Objective; // Supports in even positions, Objectives in odd
 		Layout.Add({FVector(i * Spacing, 0.f, Spacing), Role});
 	}
 	
 	// Layer of protected pieces above objectives
-	for (int i = 2; i < BridgeWidth; i += 2)
+	for (int i = 1; i < BridgeWidth - 1; i += 2)
 		Layout.Add({FVector(i * Spacing, 0.f, 2 * Spacing), EPieceRole::Protected});
 	
 	TArray<ABuildingPiece*> Pieces;

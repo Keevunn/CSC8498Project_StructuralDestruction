@@ -96,17 +96,12 @@ void UStructureStabilityModel_PHYS::SpawnConstraintsFromAdjacency() {
 		}
 	}
 	
-	/*UE_LOG(LogTemp, Log, TEXT("[B] StructureActor '%s' | Constraints spawned: %d"),
-		*Structure->GetDebugName(), 
-		ConstraintEdges.Num()
-	);*/
 	InitialConstraintCount = ConstraintEdges.Num();
 }
 
 void UStructureStabilityModel_PHYS::RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint,
-	ABuildingPiece* PieceA, ABuildingPiece* PieceB) {
+                                                           ABuildingPiece* PieceA, ABuildingPiece* PieceB) {
 	if (!IsValid(Constraint) || !IsValid(PieceA) || !IsValid(PieceB)) return;
-	const int32 EdgeIdx = ConstraintEdges.Num();
 	
 	FBaselineConstraintEdge Edge;
 	Edge.Constraint = Constraint;
@@ -124,7 +119,7 @@ void UStructureStabilityModel_PHYS::ConfigurePiecesForSetup() {
 		if (!IsValid(Mesh)) continue; 
 	
 		Mesh->SetMobility(EComponentMobility::Movable);
-		Mesh->SetMassOverrideInKg(NAME_None, PieceMass, true); // TEMP should move mass to BuildingPiece
+		Mesh->SetMassOverrideInKg(NAME_None, PieceMass, true); // TODO should move mass to BuildingPiece
 	
 		Mesh->SetSimulatePhysics(false); // no physics simulation before constraints exist
 	}
@@ -174,12 +169,10 @@ void UStructureStabilityModel_PHYS::DrawConstraintDebug() const {
 void UStructureStabilityModel_PHYS::HandleConstraintBroken(const int32 ConstraintIndex) {
 	// Cost negligible, doesn't rely on physics index
 	for (FBaselineConstraintEdge& Edge : ConstraintEdges) {
-		if (Edge.bBroken || !IsValid(Edge.Constraint) || Edge.Constraint->IsBroken()) continue;
+		if (Edge.bBroken || !IsValid(Edge.Constraint) || !Edge.Constraint->IsBroken()) continue;
 	
 		Edge.bBroken = true;
 		ConstraintBreakCount++;
-		if (ABuildingPiece* A = Edge.PieceA.Get()) A->RecordPhysicsBreak();
-		if (ABuildingPiece* B = Edge.PieceB.Get()) B->RecordPhysicsBreak();
 	
 		Edge.Constraint->DestroyComponent();
 		Edge.Constraint = nullptr;
