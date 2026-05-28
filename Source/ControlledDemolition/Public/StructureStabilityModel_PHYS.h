@@ -45,7 +45,7 @@ protected:
 	void RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint, ABuildingPiece* PieceA, ABuildingPiece* PieceB);
 	
 	void ConfigurePiecesForSetup();
-	void EnablePhysicsOnAllPieces();
+	void EnablePhysicsOnPieces();
 	
 	void DrawConstraintDebug() const;
 	

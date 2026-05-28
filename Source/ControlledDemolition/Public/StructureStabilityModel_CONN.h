@@ -20,7 +20,6 @@ public:
 	virtual FName GetModelType() const override { return TEXT("CONN"); }
 	
 protected:
-	void ReconfigureSupport();
 	void DetachUnsupportedPieces();
 	
 	UPROPERTY(EditAnywhere, Category = "Debug")

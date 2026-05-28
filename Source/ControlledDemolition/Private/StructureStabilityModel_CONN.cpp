@@ -11,11 +11,6 @@ void UStructureStabilityModel_CONN::Initialise(AStructureActor* InStructure) {
 }
 
 void UStructureStabilityModel_CONN::RefreshState() {
-	ReconfigureSupport();
-}
-
-
-void UStructureStabilityModel_CONN::ReconfigureSupport() {
 	const double StartSec = FPlatformTime::Seconds();
 	
 	const auto& Pieces = OwningStructure->GetPieces();

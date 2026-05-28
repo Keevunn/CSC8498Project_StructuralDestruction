@@ -20,7 +20,7 @@ void UStructureStabilityModel_PHYS::Initialise(AStructureActor* InStructure) {
 	
 	ConfigurePiecesForSetup(); // Sets mobility, mass, disables physics
 	SpawnConstraintsFromAdjacency();
-	EnablePhysicsOnAllPieces(); // Enables physics for non-anchored pieces
+	EnablePhysicsOnPieces(); // Enables physics for non-anchored pieces
 }
 
 void UStructureStabilityModel_PHYS::SpawnConstraintsFromAdjacency() {
@@ -125,7 +125,7 @@ void UStructureStabilityModel_PHYS::ConfigurePiecesForSetup() {
 	}
 }
 
-void UStructureStabilityModel_PHYS::EnablePhysicsOnAllPieces() {
+void UStructureStabilityModel_PHYS::EnablePhysicsOnPieces() {
 	for (ABuildingPiece* Piece : OwningStructure->GetPieces()) {
 		if (!IsValid(Piece)) continue;
 		
