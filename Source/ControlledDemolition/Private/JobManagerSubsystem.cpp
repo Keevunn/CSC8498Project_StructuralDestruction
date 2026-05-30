@@ -6,7 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 
 void UJobManagerSubsystem::StartJob(const FJobDefinition& Job) {
-	if (CurrentJob == Job) return;
+	
 	CurrentJob = Job;
 	
 	if (const UWorld* World = GetWorld())

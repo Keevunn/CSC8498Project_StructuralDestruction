@@ -111,9 +111,9 @@ void ADemolitionPlayerController::SetupInputComponent() {
 	
 	if (auto* EIC = Cast<UEnhancedInputComponent>(InputComponent)) {
 		if (ToggleDrawDebugAction)
-			EIC->BindAction(ToggleDrawDebugAction, ETriggerEvent::Triggered, this, &ADemolitionPlayerController::HandleToggleDrawDebug);
+			EIC->BindAction(ToggleDrawDebugAction, ETriggerEvent::Started, this, &ADemolitionPlayerController::HandleToggleDrawDebug);
 		if (ToggleVerboseLogsAction)
-			EIC->BindAction(ToggleVerboseLogsAction, ETriggerEvent::Triggered, this, &ADemolitionPlayerController::HandleToggleVerboseLogs);
+			EIC->BindAction(ToggleVerboseLogsAction, ETriggerEvent::Started, this, &ADemolitionPlayerController::HandleToggleVerboseLogs);
 	}
 }
 

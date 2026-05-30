@@ -236,16 +236,37 @@ void AStructureActor::BuildConnections() {
 void AStructureActor::CheckJobConditions() {
 	ADemolitionGameState* GameState = GetWorld()->GetGameState<ADemolitionGameState>();
 	if (!GameState || GameState->IsGameOver()) return;
-	int32 MaxCharges = GameState->GetMaxCharges();
-	int32 ChargesUsed = GameState->GetChargesUsed();
 	
-	if (HasFailedProtectedCondition() || (MaxCharges > 0 && ChargesUsed >= MaxCharges)) {
-		GameState->FailJob();
-		return;
+	if (StabilityModel && StabilityModel->OverridesJobConditions()) {
+		if (StabilityModel->HasFailedProtectedCondition()) {
+			GameState->FailJob();
+			return;
+		}
+		
+		if (StabilityModel->HasMetObjectiveCondition()) {
+			GameState->CompleteJob();
+			return;
+		}
+	}
+	else {
+		// Protected destroyed -> fail
+		if (HasFailedProtectedCondition()) {
+			GameState->FailJob();
+			return;
+		}
+	
+		// Objective destroyed -> win
+		if (HasMetObjectiveCondition()) {
+			GameState->CompleteJob();
+			return;
+		}
 	}
 	
-	if (HasMetObjectiveCondition())
-		GameState->CompleteJob();
+	// No charges
+	int32 MaxCharges = GameState->GetMaxCharges();
+	int32 ChargesUsed = GameState->GetChargesUsed();
+	if (MaxCharges > 0 && ChargesUsed >= MaxCharges)
+		GameState->FailJob();
 }
 
 bool AStructureActor::HasFailedProtectedCondition() const {

@@ -21,6 +21,10 @@ public:
 	
 	virtual void RefreshState() PURE_VIRTUAL(RefreshState, );
 	
+	virtual bool HasMetObjectiveCondition() const { return false; }
+	virtual bool HasFailedProtectedCondition() const { return false; }
+	virtual bool OverridesJobConditions() const { return false; }
+	
 	virtual FName GetModelType() const PURE_VIRTUAL(GetModelType, return NAME_None;);
 	
 	virtual void WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const {}

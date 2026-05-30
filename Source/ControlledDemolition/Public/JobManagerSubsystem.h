@@ -16,7 +16,7 @@ public:
 	void StartJob(const FJobDefinition& Job);
 	void RestartCurrentJob();
 	
-	const FJobDefinition& GetCurrentJob() const {return CurrentJob;}
+	const FJobDefinition* GetCurrentJob() const {return &CurrentJob;}
 	
 protected:
 	UPROPERTY()

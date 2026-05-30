@@ -4,8 +4,12 @@
 #include "DemolitionLevelSelectWidget.h"
 
 #include "DemolitionPlayerController.h"
+#include "JobManagerSubsystem.h"
+#include "JobTypes.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
+
+class UJobManagerSubsystem;
 
 void UDemolitionLevelSelectWidget::RefreshLevelList() {
 	return;
@@ -27,8 +31,6 @@ void UDemolitionLevelSelectWidget::NativeConstruct() {
 		Button_Back->OnClicked.AddDynamic(this, &UDemolitionLevelSelectWidget::HandleBackClicked);
 }
 
-// TODO JOB LEVEL NAMES HERE ARE PLACEHOLDERS
-
 void UDemolitionLevelSelectWidget::HandleLevelOneClicked() {
 	OpenJobLevel(TEXT("Level_DemoCONN"));
 }
@@ -47,5 +49,20 @@ void UDemolitionLevelSelectWidget::HandleBackClicked() {
 }
 
 void UDemolitionLevelSelectWidget::OpenJobLevel(const FName LevelName) {
-	UGameplayStatics::OpenLevel(this, LevelName);
+	UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
+
+	UJobManagerSubsystem* JobManager = GI->GetSubsystem<UJobManagerSubsystem>();
+	if (!JobManager) return;
+	
+	FJobDefinition Job;
+	Job.LevelName = LevelName;
+	Job.MaxCharges = 5;
+	
+	if (LevelName == TEXT("Level_DemoCONN"))		Job.JobName = TEXT("CONN Demo");
+	else if (LevelName == TEXT("Level_DemoPHYS"))	Job.JobName = TEXT("PHYS Demo");
+	else if (LevelName == TEXT("Level_DemoLOAD"))	Job.JobName = TEXT("LOAD Demo");
+	else											Job.JobName = TEXT("Demo Job");
+	
+	JobManager->StartJob(Job);
 }

@@ -23,6 +23,47 @@ void UStructureStabilityModel_PHYS::Initialise(AStructureActor* InStructure) {
 	EnablePhysicsOnPieces(); // Enables physics for non-anchored pieces
 }
 
+bool UStructureStabilityModel_PHYS::HasMetObjectiveCondition() const {
+	const AStructureActor* Structure = OwningStructure.Get();
+	if (!IsValid(Structure)) return false;
+	
+	bool bFoundObjective = false;
+	for (const ABuildingPiece* Piece : Structure->GetPieces()) {
+		if (!IsValid(Piece) || !Piece->IsObjective()) continue;
+		
+		bFoundObjective = true;
+		
+		const int32 TotalAttached = CountAttachedConstraints(Piece, false);
+		const int32 UnbrokenAttached = CountAttachedConstraints(Piece, true);
+		
+		// All objectives must be detached -> win
+		const bool bHasMetCondition = TotalAttached > 0 && UnbrokenAttached == 0;
+		
+		if (!bHasMetCondition) return false;
+	}
+	
+	return bFoundObjective;
+}
+
+bool UStructureStabilityModel_PHYS::HasFailedProtectedCondition() const {
+	const AStructureActor* Structure = OwningStructure.Get();
+	if (!IsValid(Structure)) return false;
+
+	for (const ABuildingPiece* Piece : Structure->GetPieces()) {
+		if (!IsValid(Piece) || !Piece->ShouldProtect()) continue;
+
+		const int32 TotalAttached = CountAttachedConstraints(Piece, false);
+		const int32 UnbrokenAttached = CountAttachedConstraints(Piece, true);
+
+		// Any protected pieces disconnected -> lose
+		const bool bHasFailedCondition = TotalAttached > 0 && UnbrokenAttached < TotalAttached;
+
+		if (bHasFailedCondition) return true;
+	}
+
+	return false;
+}
+
 void UStructureStabilityModel_PHYS::WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const {
 	OutMetrics.ConstraintCount = ConstraintEdges.Num();
 	OutMetrics.ConstraintBreaks = ConstraintBreakCount;
@@ -193,4 +234,18 @@ void UStructureStabilityModel_PHYS::HandleConstraintBroken(const int32 Constrain
 	}
 	
 	DrawConstraintDebug();
+}
+
+int32 UStructureStabilityModel_PHYS::CountAttachedConstraints(const ABuildingPiece* Piece, const bool bOnlyUnbroken) const {
+	if (!IsValid(Piece)) return 0;
+	
+	int32 Count = 0;
+	for (const FBaselineConstraintEdge& Edge : ConstraintEdges) {
+		const bool bContainsPiece = Edge.PieceA.Get() == Piece || Edge.PieceB.Get() == Piece;
+		
+		if (!bContainsPiece || (bOnlyUnbroken && Edge.bBroken)) continue;
+		
+		Count++;
+	}
+	return Count;
 }

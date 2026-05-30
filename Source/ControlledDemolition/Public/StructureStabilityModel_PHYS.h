@@ -35,6 +35,10 @@ public:
 	// Intentionally empty - no graph to resolve
 	virtual void RefreshState() override { DrawConstraintDebug(); } 
 	
+	virtual bool HasMetObjectiveCondition() const override;
+	virtual bool HasFailedProtectedCondition() const override;
+	virtual bool OverridesJobConditions() const override {return true;}
+	
 	virtual FName GetModelType() const override { return TEXT("PHYS"); }
 	
 	virtual void WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const override;
@@ -62,4 +66,7 @@ protected:
 	
 	int32 ConstraintBreakCount = 0;
 	float ConstraintSpawnMs = 0.f;
+	
+private:
+	int32 CountAttachedConstraints(const ABuildingPiece* Piece, const bool bOnlyUnbroken) const;
 };

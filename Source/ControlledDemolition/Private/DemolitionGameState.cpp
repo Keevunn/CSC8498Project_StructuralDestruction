@@ -3,8 +3,7 @@
 
 #include "DemolitionGameState.h"
 
-#include "BuildingPiece.h"
-#include "DemolitionPlayerController.h"
+#include "DemolitionDebug.h"
 #include "GameEconomySubsystem.h"
 #include "JobManagerSubsystem.h"
 #include "StructureActor.h"
@@ -14,13 +13,11 @@ void ADemolitionGameState::BeginPlay() {
 	
 	if (UGameInstance* GI = GetGameInstance())
 		if (UJobManagerSubsystem* JobManager = GI->GetSubsystem<UJobManagerSubsystem>()) {
-			FJobDefinition Job;
-			Job.JobName = "Simple Tower Demo";
-			Job.LevelName = "Level_SimpleTower";
-			Job.MaxCharges = 5;
-			MaxCharges = Job.MaxCharges;
-			
-			JobManager->StartJob(Job);
+			const FJobDefinition* Job = JobManager->GetCurrentJob();
+			if (Job) {
+				MaxCharges = Job->MaxCharges;
+				CurrentJob = *Job;
+			}
 		}
 	
 }
@@ -50,20 +47,21 @@ void ADemolitionGameState::CompleteJob() {
 	
 	FJobResult Result = EvaluateStructures();
 	
-	Result.FinalScore = CalculateScore(Result.DestructionRatio, Result.bProtectedIntact);
+	Result.FinalScore = CalculateScore(Result.DestructionRatio, true);
 	Result.MoneyEarned = ConvertScoreToMoney(Result.FinalScore);
 	
 	if (const UGameInstance* GI = GetGameInstance()) 
 		if (UGameEconomySubsystem* Economy = GI->GetSubsystem<UGameEconomySubsystem>())
 			Economy->AddMoney(Result.MoneyEarned);
 	
-	UE_LOG(LogTemp, Log, TEXT("Job Complete | Score: %.1f | Money: £%d"),
-		Result.FinalScore,
-		Result.MoneyEarned
-	);
+	if (DemolitionDebug::VerboseLogsEnabled())
+		UE_LOG(LogTemp, Log, TEXT("Job Complete | Score: %.1f | Money: £%d"),
+			Result.FinalScore,
+			Result.MoneyEarned
+		);
 	
 	LastJobResult = Result;
-	OnJobCompleted.Broadcast(Result.bProtectedIntact, Result.FinalScore, Result.MoneyEarned, Result.DestructionRatio);
+	OnJobCompleted.Broadcast(true, Result.FinalScore, Result.MoneyEarned, Result.DestructionRatio);
 	
 }
 
@@ -76,22 +74,19 @@ void ADemolitionGameState::FailJob() {
 	Result.FinalScore = 0.f;
 	Result.MoneyEarned = 0;
 	
-	UE_LOG(LogTemp, Log, TEXT("Job Failed | Score: 0| Money: £0"));
+	if (DemolitionDebug::VerboseLogsEnabled()) UE_LOG(LogTemp, Log, TEXT("Job Failed | Score: 0| Money: £0"));
 	
 	LastJobResult = Result;
-	OnJobCompleted.Broadcast(Result.bProtectedIntact, 0.f, 0.f, Result.DestructionRatio);
+	OnJobCompleted.Broadcast(false, 0.f, 0.f, Result.DestructionRatio);
 }
 
 FJobResult ADemolitionGameState::EvaluateStructures() const {
 	FJobResult Result;
 	
-	bool bProtectedIntact = true;
 	int32 TotalBrokenPieces = 0;
 	int32 TotalUnprotectedPieces = 0;
 	for (AStructureActor* Structure : ActiveStructures) {
 		const FStructureResult StructureResult = Structure->EvaluateStructure();
-		
-		if (!StructureResult.bProtectedIntact) bProtectedIntact = false;
 		
 		TotalBrokenPieces += StructureResult.BrokenPiecesCount;
 		TotalUnprotectedPieces += StructureResult.UnprotectedPiecesCount;
@@ -100,7 +95,6 @@ FJobResult ADemolitionGameState::EvaluateStructures() const {
 	Result.DestructionRatio = TotalUnprotectedPieces > 0 
 		? static_cast<float>(TotalBrokenPieces) / TotalUnprotectedPieces 
 		: 0.f;
-	Result.bProtectedIntact = bProtectedIntact;
 	Result.ChargesUsed = ChargesUsed;
 	
 	return Result;

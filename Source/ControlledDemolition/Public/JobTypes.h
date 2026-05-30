@@ -34,9 +34,6 @@ struct FJobResult {
 	float DestructionRatio = 0.f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	bool bProtectedIntact = true;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 ChargesUsed = 0;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
