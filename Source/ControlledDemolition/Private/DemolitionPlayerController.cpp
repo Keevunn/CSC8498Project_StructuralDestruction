@@ -4,11 +4,14 @@
 #include "DemolitionPlayerController.h"
 
 #include "DemolitionBenchmarkRunnerWidget.h"
+#include "DemolitionDebug.h"
 #include "DemolitionGameState.h"
 #include "DemolitionHUDWidget.h"
 #include "DemolitionLevelSelectWidget.h"
 #include "DemolitionMainMenuWidget.h"
 #include "DemolitionResultWidget.h"
+#include "DemolitionSweepSelectWidget.h"
+#include "EnhancedInputComponent.h"
 #include "Blueprint/UserWidget.h"
 
 void ADemolitionPlayerController::BeginPlay() {
@@ -33,7 +36,7 @@ void ADemolitionPlayerController::ShowMainMenu() {
 	if (!MainMenuWidget) return;
 
 	MainMenuWidget->AddToViewport();
-	SetUIInput(MainMenuWidget);
+	SetUIInput();
 }
 
 void ADemolitionPlayerController::ShowGameplayHUD() {
@@ -59,7 +62,7 @@ void ADemolitionPlayerController::ShowResultScreen(bool bWonLevel, int32 FinalSc
 	
 	ResultWidget->SetResultData(bWonLevel, FinalScore, MoneyEarned, DestructionRatio);
 	ResultWidget->AddToViewport();
-	SetUIInput(ResultWidget);
+	SetUIInput();
 }
 
 void ADemolitionPlayerController::ShowLevelSelect() {
@@ -71,7 +74,7 @@ void ADemolitionPlayerController::ShowLevelSelect() {
 	if (!LevelSelectWidget) return;
 	
 	LevelSelectWidget->AddToViewport();
-	SetUIInput(LevelSelectWidget);
+	SetUIInput();
 }
 
 void ADemolitionPlayerController::ShowBenchmarkRunner() {
@@ -83,12 +86,43 @@ void ADemolitionPlayerController::ShowBenchmarkRunner() {
 	if (!BenchmarkRunnerWidget) return;
 
 	BenchmarkRunnerWidget->AddToViewport();
-	SetUIInput(BenchmarkRunnerWidget);
+	SetUIInput();
+}
+
+void ADemolitionPlayerController::ShowSweepSelect() {
+	HideAllWidgets();
+	
+	if (!SweepSelectWidget && SweepSelectWidgetClass)
+		SweepSelectWidget = CreateWidget<UDemolitionSweepSelectWidget>(this, SweepSelectWidgetClass);
+	
+	if (!SweepSelectWidget) return;
+	
+	SweepSelectWidget->AddToViewport();
+	SetUIInput();
 }
 
 void ADemolitionPlayerController::UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges) {
 	if (HUDWidget)
 		HUDWidget->SetChargesData(ChargesUsed, MaxCharges);
+}
+
+void ADemolitionPlayerController::SetupInputComponent() {
+	Super::SetupInputComponent();
+	
+	if (auto* EIC = Cast<UEnhancedInputComponent>(InputComponent)) {
+		if (ToggleDrawDebugAction)
+			EIC->BindAction(ToggleDrawDebugAction, ETriggerEvent::Triggered, this, &ADemolitionPlayerController::HandleToggleDrawDebug);
+		if (ToggleVerboseLogsAction)
+			EIC->BindAction(ToggleVerboseLogsAction, ETriggerEvent::Triggered, this, &ADemolitionPlayerController::HandleToggleVerboseLogs);
+	}
+}
+
+void ADemolitionPlayerController::HandleToggleDrawDebug() {
+	DemolitionDebug::ToggleDrawDebug();
+}
+
+void ADemolitionPlayerController::HandleToggleVerboseLogs() {
+	DemolitionDebug::ToggleVerboseLogs();
 }
 
 void ADemolitionPlayerController::HideAllWidgets() {
@@ -101,6 +135,8 @@ void ADemolitionPlayerController::HideAllWidgets() {
 	if (MainMenuWidget) MainMenuWidget->RemoveFromParent();
 	
 	if (BenchmarkRunnerWidget) BenchmarkRunnerWidget->RemoveFromParent();
+	
+	if (SweepSelectWidget) SweepSelectWidget->RemoveFromParent();
 }
 
 void ADemolitionPlayerController::SetGameInput() {
@@ -109,11 +145,8 @@ void ADemolitionPlayerController::SetGameInput() {
 	bShowMouseCursor = false;
 }
 
-void ADemolitionPlayerController::SetUIInput(UUserWidget* FocusWidget) {
+void ADemolitionPlayerController::SetUIInput() {
 	FInputModeUIOnly InputMode;
-	
-	if (FocusWidget)
-		InputMode.SetWidgetToFocus(FocusWidget->TakeWidget());
 	
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;

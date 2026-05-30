@@ -15,7 +15,7 @@ enum class EPieceRole : uint8;
 class AStructureActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBenchmarkSweepsComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBenchmarkSweepStarted, int32, SweepNumber, int32, TotalSweeps);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnBenchmarkSweepStarted, int32, SweepNumber, int32, TotalSweeps, EBenchmarkScenario, Scenario);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBenchmarkRunStarted, int32, RunNumber, int32, TotalRuns);
 
 UCLASS()
@@ -30,12 +30,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Benchmark")
 	FBox GetCurrentStructureBounds() const;
 	
-	// Entry point - called from console, can be called from blueprint
 	UFUNCTION(BlueprintCallable, Category="Benchmark")
-	void RunSweep(int32 Sweep);
+	void SetPendingSingleSweep(EBenchmarkScenario Scenario, EBenchmarkProfile Profile);
 	
 	UFUNCTION(BlueprintCallable, Category="Benchmark")
-	void RunAllSweeps();
+	void SetPendingAllSweeps(EBenchmarkProfile Profile);
+	
+	UFUNCTION(BlueprintCallable, Category="Benchmark")
+	void RunPendingSweeps();
 	
 	UPROPERTY(BlueprintAssignable, Category="Benchmark")
 	FOnBenchmarkSweepsComplete OnAllSweepsComplete;
@@ -48,10 +50,10 @@ public:
 	
 private:
 	// Run loop ---------------------------------
-	int32 EnqueueSweep_AnchorRemoval();
-	int32 EnqueueSweep_SupportRemoval();
-	int32 EnqueueSweep_LoadRedistribution();
-	int32 EnqueueSweep_ProtectedPreservation();
+	int32 EnqueueSweep_AnchorRemoval(const TArray<int32>& Counts, int32 Repeats);
+	int32 EnqueueSweep_SupportRemoval(const TArray<int32>& Counts, int32 Repeats);
+	int32 EnqueueSweep_LoadRedistribution(int32 Repeats);
+	int32 EnqueueSweep_ProtectedPreservation(const TArray<int32>& Widths, int32 Repeats);
 	void BeginRun();
 	void EndRun();
 	void StartNextRun();
@@ -76,10 +78,6 @@ private:
 	// Pass/Fail dispatch -----------------------
 	void EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec) const;
 	
-	// Console command handler ------------------
-	void HandleConsoleCommand(const TArray<FString>& Args);
-	IConsoleCommand* RegisteredCommand = nullptr;
-	
 	// Per-run state ----------------------------
 	TQueue<FBenchmarkRunSpec> Queue;
 	TOptional<FBenchmarkRunSpec> CurrentSpec;
@@ -96,8 +94,12 @@ private:
 	float ObservationSeconds = 3.f;
 	
 	// UI ---------------------------------------
-	int32 LastSweepNumber = INDEX_NONE;
-	static constexpr int32 TotalSweeps = 4;
+	TOptional<EBenchmarkScenario> PendingScenario;
+	EBenchmarkProfile PendingProfile = EBenchmarkProfile::Demo;
+	
+	int32 LastScenario = INDEX_NONE; // spec.scenario as int
+	int32 CurrentSweepIndex = 0; 
+	int32 TotalSweeps = 0; 
 	int32 CurrentRun = INDEX_NONE;
 	TArray<int32> TotalRunsPerSweep;
 	

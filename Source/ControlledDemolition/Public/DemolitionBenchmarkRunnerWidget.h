@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "DemolitionBenchmarkRunnerWidget.generated.h"
 
+enum class EBenchmarkScenario : uint8;
 class UTextBlock;
 
 UCLASS()
@@ -18,7 +19,7 @@ protected:
 	virtual void NativeDestruct() override;
 	
 	UFUNCTION()
-	void HandleSweepStarted(int32 SweepNumber, int32 TotalSweeps);
+	void HandleSweepStarted(int32 SweepNumber, int32 TotalSweeps, EBenchmarkScenario Scenario);
 	
 	UFUNCTION()
 	void HandleRunStarted(int32 RunNumber, int32 TotalRuns);

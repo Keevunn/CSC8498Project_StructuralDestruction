@@ -3,6 +3,7 @@
 
 #include "BuildingPiece.h"
 
+#include "DemolitionDebug.h"
 #include "DemolitionGameState.h"
 #include "StructureActor.h"
 
@@ -107,15 +108,12 @@ void ABuildingPiece::ApplyExplosionDamage(const FVector& ExplosionOrigin, float 
 		DynamicMaterial->SetScalarParameterValue(TEXT("DamageAmount"), DamageRatio);
 	}
 	
-	if (GEngine) {
-		const FString DebugMessage = FString::Printf(
-			TEXT("BuildingPiece '%s' | Damage: -%.1f | Health: %.1f"),
+	if (GEngine && DemolitionDebug::VerboseLogsEnabled()) {
+		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | Damage: -%.1f | Health: %.1f"),
 			*GetDebugName(),
 			IncomingDmg,
 			CurrentHealth
 		);
-		
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, DebugMessage);
 	}
 }
 
@@ -129,7 +127,7 @@ void ABuildingPiece::BreakPiece() {
 	
 	OnPieceBroken.Broadcast(this);
 	
-	if (GEngine) 
+	if (GEngine && DemolitionDebug::VerboseLogsEnabled()) 
 		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | BROKE"), *GetDebugName());
 }
 

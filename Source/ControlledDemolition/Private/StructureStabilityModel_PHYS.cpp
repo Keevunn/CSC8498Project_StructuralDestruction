@@ -4,6 +4,7 @@
 #include "StructureStabilityModel_PHYS.h"
 
 #include "BuildingPiece.h"
+#include "DemolitionDebug.h"
 #include "StructureActor.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 
@@ -150,7 +151,7 @@ void UStructureStabilityModel_PHYS::EnablePhysicsOnPieces() {
 }
 
 void UStructureStabilityModel_PHYS::DrawConstraintDebug() const {
-	if (!bDrawConstraintDebug) return;
+	if (!DemolitionDebug::DrawDebugEnabled()) return;
 	
 	const AStructureActor* Structure = OwningStructure.Get();
 	if (!Structure) return;

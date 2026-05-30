@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerController.h"
 #include "DemolitionPlayerController.generated.h"
 
+class UDemolitionSweepSelectWidget;
+class UInputAction;
 class UDemolitionMainMenuWidget;
 class UDemolitionBenchmarkRunnerWidget;
 class UDemolitionLevelSelectWidget;
@@ -26,6 +28,7 @@ public:
 	void ShowResultScreen(bool bWonLevel, int32 FinalScore, int32 MoneyEarned, float DestructionRatio);
 	void ShowLevelSelect();
 	void ShowBenchmarkRunner();
+	void ShowSweepSelect();
 	
 	void UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges);
 	
@@ -45,6 +48,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UDemolitionBenchmarkRunnerWidget> BenchmarkRunnerWidgetClass;
 	
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UDemolitionSweepSelectWidget> SweepSelectWidgetClass;
+	
 	UPROPERTY()
 	TObjectPtr<UDemolitionHUDWidget> HUDWidget;
 	
@@ -60,10 +66,25 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UDemolitionBenchmarkRunnerWidget> BenchmarkRunnerWidget;
 	
+	UPROPERTY()
+	TObjectPtr<UDemolitionSweepSelectWidget> SweepSelectWidget;
+	
+	// Input for debug
+	virtual void SetupInputComponent() override;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> ToggleDrawDebugAction;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> ToggleVerboseLogsAction;
+	
+	void HandleToggleDrawDebug();
+	void HandleToggleVerboseLogs();
+	
 private:
 	void HideAllWidgets();
 	void SetGameInput();
-	void SetUIInput(UUserWidget* FocusWidget);
+	void SetUIInput();
 	
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	bool bAutoShowGameplayHUD = true;

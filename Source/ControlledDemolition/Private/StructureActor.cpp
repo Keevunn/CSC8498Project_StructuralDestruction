@@ -4,6 +4,7 @@
 #include "StructureActor.h"
 
 #include "BuildingPiece.h"
+#include "DemolitionDebug.h"
 #include "DemolitionGameState.h"
 #include "StructureStabilityModel.h"
 #include "Engine/OverlapResult.h"
@@ -48,7 +49,7 @@ void AStructureActor::RefreshStructureState() {
 		bStabilityDirty = false;
 	}
 	
-	if (bLogStructureMetrics)
+	if (DemolitionDebug::VerboseLogsEnabled())
 		LogStructureMetrics();
 	
 	if (!bRunningBenchmark) CheckJobConditions();
@@ -100,7 +101,7 @@ void AStructureActor::BeginPlay()
 	if (ADemolitionGameState* GameState = GetWorld()->GetGameState<ADemolitionGameState>())
 		GameState->RegisterStructure(this);
 	
-	if (Pieces.IsEmpty()) {
+	if (DemolitionDebug::VerboseLogsEnabled() && Pieces.IsEmpty()) {
 		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No assigned pieces"), *GetDebugName()); 
 		return;
 	}
@@ -119,7 +120,7 @@ void AStructureActor::BeginPlay()
 	if (!bRunningBenchmark) {
 		if (StabilityModel) 
 			StabilityModel->Initialise(this);
-		else 
+		else if (DemolitionDebug::VerboseLogsEnabled())
 			UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No StabilityModel assigned"), *GetDebugName());
 	}
 	
@@ -163,7 +164,7 @@ void AStructureActor::FindConnectionsForPiece(ABuildingPiece* SourcePiece) {
 	const FVector Centre = Bounds.GetCenter();
 	const FVector Dimensions = Bounds.GetExtent() + FVector(ConnectionDistanceThreshold);
 	
-	if (bDrawConnectionDebug)
+	if (DemolitionDebug::DrawDebugEnabled())
 		DrawDebugBox(
 			GetWorld(),
 			Centre,
@@ -280,7 +281,7 @@ void AStructureActor::HandlePieceBroken(ABuildingPiece* BrokenPiece) {
 }
 
 void AStructureActor::DrawConnectionDebug() const {
-	if (!bDrawConnectionDebug || !GetWorld()) return;
+	if (!DemolitionDebug::DrawDebugEnabled() || !GetWorld()) return;
 	
 	for (const auto& Node : Connections) {
 		ABuildingPiece* PieceA = Node.Key.ResolveObjectPtr();

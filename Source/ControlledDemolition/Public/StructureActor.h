@@ -123,14 +123,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Structure|Update")
 	bool bAutoRefreshOnBrokenPiece = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Structure|Debug")
-	bool bLogStructureMetrics = true;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Structure|Debug")
-	bool bDrawConnectionDebug = false;
-	
 	// Can inspect the cached values in editor
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure|Metrics")
 	FStructureRuntimeMetrics RuntimeMetrics;
 	

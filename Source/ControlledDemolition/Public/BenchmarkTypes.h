@@ -13,6 +13,11 @@ enum class EBenchmarkScenario : uint8 {
 	AnchorRemoval, SupportRemoval, LoadRedistribution, ProtectedPreservation
 };
 
+UENUM()
+enum class EBenchmarkProfile : uint8 {
+	Demo, Full
+};
+
 USTRUCT()
 struct FBenchmarkRunSpec {
 	GENERATED_BODY()

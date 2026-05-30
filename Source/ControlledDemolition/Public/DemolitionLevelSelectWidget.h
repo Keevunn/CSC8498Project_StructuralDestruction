@@ -29,6 +29,9 @@ protected:
 	UFUNCTION()
 	void HandleLevelThreeClicked();
 	
+	UFUNCTION()
+	void HandleBackClicked();
+	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_LevelOne;
 	
@@ -37,6 +40,9 @@ protected:
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_LevelThree;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Button_Back;
 	
 private:
 	void OpenJobLevel(FName LevelName);

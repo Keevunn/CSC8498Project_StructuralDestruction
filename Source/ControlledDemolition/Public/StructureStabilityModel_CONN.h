@@ -22,6 +22,4 @@ public:
 protected:
 	void DetachUnsupportedPieces();
 	
-	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDrawSupportDebug = true;
 };

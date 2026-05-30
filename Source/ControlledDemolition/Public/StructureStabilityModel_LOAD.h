@@ -33,8 +33,5 @@ private:
 	int32 LastCascadeIterations = 0;
 	int32 LastOverloadFailsCount = 0;
 	
-	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDrawLoadInfoDebug = true;
-	
 	bool bRefreshActive = false;
 };

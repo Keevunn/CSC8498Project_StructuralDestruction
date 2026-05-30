@@ -4,6 +4,7 @@
 #include "StructureStabilityModel_CONN.h"
 
 #include "BuildingPiece.h"
+#include "DemolitionDebug.h"
 #include "StructureActor.h"
 
 void UStructureStabilityModel_CONN::Initialise(AStructureActor* InStructure) {
@@ -33,7 +34,7 @@ void UStructureStabilityModel_CONN::RefreshState() {
 		bFoundAnchor = true;
 	}
 	
-	if (!bFoundAnchor)
+	if (!bFoundAnchor && DemolitionDebug::VerboseLogsEnabled())
 		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No assigned anchors"), *Structure->GetDebugName());
 	
 	// BFS - sets 'supported' to true as long as piece is connected
@@ -58,7 +59,7 @@ void UStructureStabilityModel_CONN::RefreshState() {
 	
 	DetachUnsupportedPieces();
 	
-	if (bDrawSupportDebug) {
+	if (DemolitionDebug::DrawDebugEnabled()) {
 		for (const ABuildingPiece* Piece : Pieces) {
 			if (!IsValid(Piece)) continue;
 		

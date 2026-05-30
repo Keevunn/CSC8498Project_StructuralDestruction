@@ -71,22 +71,38 @@ namespace {
 	}
 }
 
+namespace {
+	struct FSweepProfileParams {
+		TArray<int32> Counts;
+		int32 Repeats;
+	};
+	
+	FSweepProfileParams GetProfileParams(EBenchmarkScenario Scenario, EBenchmarkProfile Profile) {
+		const bool bIsFullSweep = Profile == EBenchmarkProfile::Full;
+		switch (Scenario) {
+		case EBenchmarkScenario::AnchorRemoval:
+		case EBenchmarkScenario::SupportRemoval:
+			return bIsFullSweep 
+				? FSweepProfileParams { {10, 25, 50, 100, 250}, 10 }
+				: FSweepProfileParams { {5, 10}, 1 };
+		case EBenchmarkScenario::LoadRedistribution:
+			return bIsFullSweep 
+				? FSweepProfileParams { {7}, 10 }
+				: FSweepProfileParams { {7}, 1 };
+		case EBenchmarkScenario::ProtectedPreservation:
+			return bIsFullSweep 
+				? FSweepProfileParams { {4, 5, 8, 15, 20}, 10 }
+				: FSweepProfileParams { {5, 10}, 1 };
+		}
+		return {};
+	}
+}
+
 void UDemolitionBenchmarkSubsystem::Initialize(FSubsystemCollectionBase& Collection) {
 	Super::Initialize(Collection);
-	RegisteredCommand = IConsoleManager::Get().RegisterConsoleCommand(
-		TEXT("benchmark.run"),
-		TEXT("Run benchmark sweep. Usage: benchmark.run <sweep#>"),
-		FConsoleCommandWithArgsDelegate::CreateUObject(this, &UDemolitionBenchmarkSubsystem::HandleConsoleCommand),
-		ECVF_Default
-	);
 }
 
 void UDemolitionBenchmarkSubsystem::Deinitialize() {
-	if (RegisteredCommand) {
-		IConsoleManager::Get().UnregisterConsoleObject(RegisteredCommand);
-		RegisteredCommand = nullptr;
-	}
-	
 	CSVHandle.Reset();
 	Super::Deinitialize();
 }
@@ -102,34 +118,56 @@ FBox UDemolitionBenchmarkSubsystem::GetCurrentStructureBounds() const {
 	return Bounds;
 }
 
-void UDemolitionBenchmarkSubsystem::RunSweep(const int32 Sweep) {
-	Queue.Empty();
-	if (Sweep == 1) EnqueueSweep_AnchorRemoval();
-	if (Sweep == 2) EnqueueSweep_SupportRemoval();
-	if (Sweep == 3) EnqueueSweep_LoadRedistribution();
-	if (Sweep == 4) EnqueueSweep_ProtectedPreservation();
-	
-	StartNextRun();
+void UDemolitionBenchmarkSubsystem::SetPendingSingleSweep(EBenchmarkScenario Scenario, EBenchmarkProfile Profile) {
+	PendingScenario = Scenario;
+	PendingProfile = Profile;
 }
 
-void UDemolitionBenchmarkSubsystem::RunAllSweeps() {
+void UDemolitionBenchmarkSubsystem::SetPendingAllSweeps(EBenchmarkProfile Profile) {
+	PendingScenario.Reset();
+	PendingProfile = Profile;
+}
+
+void UDemolitionBenchmarkSubsystem::RunPendingSweeps() {
 	Queue.Empty();
-	LastSweepNumber = INDEX_NONE;
-	TotalRunsPerSweep.Empty(TotalSweeps);
+	TotalRunsPerSweep.Empty();
+	LastScenario = INDEX_NONE;
+	CurrentSweepIndex = 0;
 	CurrentRun = 0;
+	TotalSweeps = PendingScenario.IsSet() ? 1 : 4;
 	
-	TotalRunsPerSweep.Add(EnqueueSweep_AnchorRemoval());
-	TotalRunsPerSweep.Add(EnqueueSweep_SupportRemoval());
-	TotalRunsPerSweep.Add(EnqueueSweep_LoadRedistribution());
-	TotalRunsPerSweep.Add(EnqueueSweep_ProtectedPreservation());
+	auto EnqueueSweep = [&](EBenchmarkScenario Scenario) {
+		const FSweepProfileParams Params = GetProfileParams(Scenario, PendingProfile);
+		int32 Count = 0;
+		
+		switch (Scenario) {
+		case EBenchmarkScenario::AnchorRemoval:
+			Count = EnqueueSweep_AnchorRemoval(Params.Counts, Params.Repeats); break;
+		case EBenchmarkScenario::SupportRemoval:
+			Count = EnqueueSweep_SupportRemoval(Params.Counts, Params.Repeats); break;
+		case EBenchmarkScenario::LoadRedistribution:
+			Count = EnqueueSweep_LoadRedistribution(Params.Repeats); break;
+		case EBenchmarkScenario::ProtectedPreservation:
+			Count = EnqueueSweep_ProtectedPreservation(Params.Counts, Params.Repeats); break;
+		}
+		
+		TotalRunsPerSweep.Add(Count);
+	};
+	
+	if (PendingScenario.IsSet())
+		EnqueueSweep(*PendingScenario);
+	else {
+		EnqueueSweep(EBenchmarkScenario::AnchorRemoval);
+		EnqueueSweep(EBenchmarkScenario::SupportRemoval);
+		EnqueueSweep(EBenchmarkScenario::LoadRedistribution);
+		EnqueueSweep(EBenchmarkScenario::ProtectedPreservation);
+	}
 	
 	StartNextRun();
 }
 
-int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval(const TArray<int32>& Counts, int32 Repeats) {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
-	const TArray<int32> Counts {5, 10/*10, 25, 50, 100, 250*/};
-	constexpr int32 Repeats = 1/*10*/;
 	
 	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
@@ -147,10 +185,8 @@ int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
 	return TotalRuns;
 }
 
-int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval(const TArray<int32>& Counts, int32 Repeats) {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
-	const TArray<int32> Counts {5, 10/*10, 25, 50, 100, 250*/};
-	constexpr int32 Repeats = 1/*10*/;
 	
 	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
@@ -168,10 +204,9 @@ int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
 	return TotalRuns;
 }
 
-int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution(int32 Repeats) {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
 	constexpr int32 PieceCount = 7;
-	constexpr int32 Repeats = 1/*10*/;
 	
 	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
@@ -188,10 +223,8 @@ int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
 	return TotalRuns;
 }
 
-int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation() {
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation(const TArray<int32>& Widths, int32 Repeats) {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
-	const TArray<int32> Widths {4, 7/*4, 5, 6, 8, 10*/};
-	constexpr int32 Repeats = 1/*10*/;
 	
 	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
@@ -238,7 +271,7 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	CurrentRow.StructureName = Structure->GetDebugName();
 	
 	CurrentRun++;
-	const int32 TotalRuns = TotalRunsPerSweep.IsValidIndex(LastSweepNumber-1) ? TotalRunsPerSweep[LastSweepNumber - 1] : 0;
+	const int32 TotalRuns = TotalRunsPerSweep.IsValidIndex(CurrentSweepIndex-1) ? TotalRunsPerSweep[CurrentSweepIndex - 1] : 0;
 	OnRunStarted.Broadcast(CurrentRun, TotalRuns);
 	
 	// Read post-spawn graph metrics
@@ -346,25 +379,12 @@ void UDemolitionBenchmarkSubsystem::StartNextRun() {
 		return;
 	}
 	
-	int32 SweepNumber = INDEX_NONE;
-	switch (Spec.Scenario) {
-	case EBenchmarkScenario::AnchorRemoval:
-		SweepNumber = 1;
-		break;
-	case EBenchmarkScenario::SupportRemoval:
-		SweepNumber = 2;
-		break;
-	case EBenchmarkScenario::LoadRedistribution:
-		SweepNumber = 3;
-		break;
-	case EBenchmarkScenario::ProtectedPreservation:
-		SweepNumber = 4;
-		break;
-	}
-	if (SweepNumber != LastSweepNumber) {
-		LastSweepNumber = SweepNumber;
+	const int32 ScenarioInt = (int32)Spec.Scenario;
+	if (ScenarioInt != LastScenario) {
+		LastScenario = ScenarioInt;
+		CurrentSweepIndex++;
 		CurrentRun = 0;
-		OnSweepStarted.Broadcast(SweepNumber, TotalSweeps);
+		OnSweepStarted.Broadcast(CurrentSweepIndex, TotalSweeps, Spec.Scenario);
 	}
 	
 	CurrentSpec = Spec;
@@ -559,9 +579,4 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 		break;
 	}
 	
-}
-
-void UDemolitionBenchmarkSubsystem::HandleConsoleCommand(const TArray<FString>& Args) {
-	const int32 Sweep = Args.Num() > 0 ? FCString::Atoi(*Args[0]) : 1;
-	RunSweep(Sweep);
 }

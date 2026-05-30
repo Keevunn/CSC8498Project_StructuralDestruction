@@ -4,6 +4,7 @@
 #include "StructureStabilityModel_LOAD.h"
 
 #include "BuildingPiece.h"
+#include "DemolitionDebug.h"
 #include "StructureActor.h"
 
 void UStructureStabilityModel_LOAD::Initialise(AStructureActor* InStructure) {
@@ -151,7 +152,7 @@ void UStructureStabilityModel_LOAD::AccumulateLoad(const TMap<TObjectKey<ABuildi
 }
 
 void UStructureStabilityModel_LOAD::DrawLoadDebug() const {
-	if (!bDrawLoadInfoDebug) return;
+	if (!DemolitionDebug::DrawDebugEnabled()) return;
 	AStructureActor* Structure = OwningStructure.Get();
 	if (!Structure) return;
 	

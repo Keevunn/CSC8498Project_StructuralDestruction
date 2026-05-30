@@ -54,9 +54,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Physics")
 	float PieceMass = 50.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDrawConstraintDebug = true;
-	
 	TArray<FBaselineConstraintEdge> ConstraintEdges;
 	
 	const float SafetyFactor = 4.f;		// Scales the load ceiling, absorbs startup jitter

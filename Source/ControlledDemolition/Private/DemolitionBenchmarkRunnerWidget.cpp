@@ -29,7 +29,15 @@ void UDemolitionBenchmarkRunnerWidget::NativeConstruct() {
 	BenchmarkSystem->OnSweepStarted.AddDynamic(this, &UDemolitionBenchmarkRunnerWidget::HandleSweepStarted);
 	BenchmarkSystem->OnRunStarted.AddDynamic(this, &UDemolitionBenchmarkRunnerWidget::HandleRunStarted);
 	BenchmarkSystem->OnAllSweepsComplete.AddDynamic(this, &UDemolitionBenchmarkRunnerWidget::HandleSweepsComplete);
-	BenchmarkSystem->RunAllSweeps();
+	
+	// Defer first benchmark run so camera adjusts to structure
+	if (UWorld* World = GetWorld())
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateWeakLambda(this, [this]() {
+				if (UGameInstance* GI = GetGameInstance())
+					if (auto* Bench = GI->GetSubsystem<UDemolitionBenchmarkSubsystem>())
+						Bench->RunPendingSweeps();
+			}));
 }
 
 void UDemolitionBenchmarkRunnerWidget::NativeDestruct() {
@@ -43,17 +51,17 @@ void UDemolitionBenchmarkRunnerWidget::NativeDestruct() {
 	Super::NativeDestruct();
 }
 
-void UDemolitionBenchmarkRunnerWidget::HandleSweepStarted(int32 SweepNumber, int32 TotalSweeps) {
+void UDemolitionBenchmarkRunnerWidget::HandleSweepStarted(int32 SweepNumber, int32 TotalSweeps, EBenchmarkScenario Scenario) {
 	if (!Text_SweepStatus) return;
 	Text_SweepStatus->SetText(FText::FromString(FString::Printf(TEXT("Sweep: %d / %d"), SweepNumber, TotalSweeps)));
 	
 	if (Text_ScenarioName) {
 		FString ScenarioName;
-		switch (SweepNumber) {
-			case 1: ScenarioName = "AnchorRemoval"; break;
-			case 2: ScenarioName = "SupportRemoval"; break;
-			case 3: ScenarioName = "LoadRedistribution"; break;
-			case 4: ScenarioName = "ProtectedPreservation"; break;
+		switch (Scenario) {
+			case EBenchmarkScenario::AnchorRemoval: ScenarioName = "AnchorRemoval"; break;
+			case EBenchmarkScenario::SupportRemoval: ScenarioName = "SupportRemoval"; break;
+			case EBenchmarkScenario::LoadRedistribution: ScenarioName = "LoadRedistribution"; break;
+			case EBenchmarkScenario::ProtectedPreservation: ScenarioName = "ProtectedPreservation"; break;
 			default: ScenarioName = "";
 		}
 		

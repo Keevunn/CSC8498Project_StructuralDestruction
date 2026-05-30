@@ -4,6 +4,7 @@
 #include "ChargeActor.h"
 
 #include "BuildingPiece.h"
+#include "DemolitionDebug.h"
 #include "StructureActor.h"
 #include "Components/SphereComponent.h"
 #include "Engine/OverlapResult.h"
@@ -30,13 +31,15 @@ void AChargeActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	DrawDebugSphere(
-			GetWorld(),
-			GetActorLocation(),
-			ExplosionRadius, 8,
-			FColor::Red,
-			false, FuseTime, -1
-		);
+	if (DemolitionDebug::DrawDebugEnabled()) {
+		DrawDebugSphere(
+			   GetWorld(),
+			   GetActorLocation(),
+			   ExplosionRadius, 8,
+			   FColor::Red,
+			   false, FuseTime, -1
+		   );
+	}
 	
 	UWorld* World = GetWorld();
 	if (!World) return;

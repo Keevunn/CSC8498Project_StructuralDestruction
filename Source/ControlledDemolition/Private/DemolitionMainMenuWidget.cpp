@@ -13,8 +13,8 @@ void UDemolitionMainMenuWidget::NativeConstruct() {
 	if (Button_DemoLevels)
 		Button_DemoLevels->OnClicked.AddDynamic(this, &UDemolitionMainMenuWidget::HandleDemoLevelsClicked);
 
-	if (Button_Benchmark)
-		Button_Benchmark->OnClicked.AddDynamic(this, &UDemolitionMainMenuWidget::HandleBenchmarkClicked);
+	if (Button_SweepSelect)
+		Button_SweepSelect->OnClicked.AddDynamic(this, &UDemolitionMainMenuWidget::HandleSweepSelectClicked);
 }
 
 void UDemolitionMainMenuWidget::HandleDemoLevelsClicked() {
@@ -22,6 +22,7 @@ void UDemolitionMainMenuWidget::HandleDemoLevelsClicked() {
 		PC->ShowLevelSelect();
 }
 
-void UDemolitionMainMenuWidget::HandleBenchmarkClicked() {
-	UGameplayStatics::OpenLevel(this, BenchmarkLevelName);
+void UDemolitionMainMenuWidget::HandleSweepSelectClicked() {
+	if (auto* PC = Cast<ADemolitionPlayerController>(GetOwningPlayer()))
+		PC->ShowSweepSelect();
 }

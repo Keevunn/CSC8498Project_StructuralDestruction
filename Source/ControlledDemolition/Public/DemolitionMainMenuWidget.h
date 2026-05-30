@@ -21,14 +21,11 @@ protected:
 	void HandleDemoLevelsClicked();
 	
 	UFUNCTION()
-	void HandleBenchmarkClicked();
+	void HandleSweepSelectClicked();
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_DemoLevels;
 	
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> Button_Benchmark;
-	
-	UPROPERTY(EditDefaultsOnly, Category="Maps")
-	FName BenchmarkLevelName = TEXT("Level_Benchmark");
+	TObjectPtr<UButton> Button_SweepSelect;
 };
