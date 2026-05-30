@@ -28,11 +28,11 @@ struct FBenchmarkRunSpec {
 struct FBenchmarkRow { 
 	// Run metadata -----------------------------
 	FString	RunID; 							// Unique ID: "<Model>_<Scenario>_<PieceCount>_R<RunIndex>_S<Seed>"
-	FString	Timestamp; 						// Wall-time at run start (ISO-8681 format)
+	FString	Timestamp; 						// Wall-time at run start (ISO-8601 format)
 	FString	MapName; 						// World the structure spawned into
 	FString	StructureName; 					// Debug name of spawned StructureActor
 	FString	Model;							// PHYS/CONN/LOAD
-	FString	Scenario; 						// AnchorRemoval / LoadDistribution / ProtectedPreservation
+	FString	Scenario; 						// AnchorRemoval / SupportRemoval / LoadDistribution / ProtectedPreservation
 	
 	// Structure shape --------------------------
 	int32	PieceCount				= 0;	// Total number of spawned pieces
@@ -45,11 +45,11 @@ struct FBenchmarkRow {
 	float	StructureSpawnMs		= 0.f;	// Time to spawn actors, assign roles, call FinishSpawning
 	float	BuildConnectionsMs		= 0.f;	// Time to execute AStructureActor::BuildConnections()
 	float	ModelInitialiseMs		= 0.f;	// Time to execute UStructureStabilityModel::Initialise() (PHYS: includes spawning constraints)
+	float	ConstraintSpawnMs		= 0.f;	// (PHYS only) Time to execute UStructureStabilityModel_PHYS::SpawnConstraintsFromAdjacency()
 	
 	// Event timings (ms) -----------------------
-	float	TriggerEventMs			= 0.f;	// Wall-time to execute trigger functions for scenarios
+	float	TriggerEventMs			= 0.f;	// Time to apply scenario trigger
 	float	SolveMs					= 0.f;	// Time to execute UStructureStabilityModel::RefreshState() (PHYS: no graph solve, so set to 0)
-	float	CascadeMs				= 0.f;	// (LOAD only) Total time to execute all cascade iterations
 	
 	// Observation window -----------------------
 	float	PeakFrameMs				= 0.f;	// Max frame time sampled during the post-trigger window
@@ -58,8 +58,7 @@ struct FBenchmarkRow {
 	
 	// Behavioural outcome ----------------------
 	int32	BrokenPieces			= 0;	// Total number of pieces with bBroken set to true at evaluation time
-	int32	SupportedPieces			= 0;	// Total number of pieces considered supported by the model (i.e. reachable from an anchor)
-	int32	DetachedPieces			= 0;	// Total number of pieces no longer reachable from an anchor
+	int32	SupportedPieces			= 0;	// Total number of pieces considered supported by graph-based model; 0 for PHYS
 	int32	ProtectedTotal			= 0;	// Total number of pieces with the 'Protected' role at spawn
 	int32	ProtectedBroken			= 0;	// Total number of 'Protected' pieces with bBroken set to true at evaluation time
 	int32	ObjectiveTotal			= 0;	// Total number of pieces with the 'Objective' role at spawn
@@ -71,11 +70,11 @@ struct FBenchmarkRow {
 	int32	ConstraintBreaks		= 0;	// (PHYS only) Total number of broken constraints at evaluation time
 	
 	// LOAD diagnostics -------------------------
-	int32	CascadeIterations		= 0;	// Number of overload/redistribution passes
+	int32	CascadeIterations		= 0;	// Total number of load redistribution passes performed
 	int32	OverloadFails			= 0;	// Total number of failed pieces via capacity check
 	
 	// Gameplay metrics -------------------------
-	float	DestructionRatio		= 0.f;	// Fraction of broken pieces out of all destructible pieces
+	float	DestructionRatio		= 0.f;	// Fraction of broken pieces out of all destructible pieces; For PHYS, this is the fraction of broken constraints
 	float	ProtectedFailureRatio	= 0.f;	// Fraction of protected broken pieces out of all protected pieces (0 if no protected)
 	bool	Passed					= false;// Scenario-specific success boolean
 	FString	OutcomeLabel;					// Categorical label (see UDemolitionBenchmarkSubsystem::EvaluatePassFail())

@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerController.h"
 #include "DemolitionPlayerController.generated.h"
 
+class UDemolitionMainMenuWidget;
+class UDemolitionBenchmarkRunnerWidget;
 class UDemolitionLevelSelectWidget;
 class UDemolitionResultWidget;
 class UDemolitionHUDWidget;
@@ -19,9 +21,11 @@ class CONTROLLEDDEMOLITION_API ADemolitionPlayerController : public APlayerContr
 public:
 	virtual void BeginPlay() override;
 	
+	void ShowMainMenu();
 	void ShowGameplayHUD();
 	void ShowResultScreen(bool bWonLevel, int32 FinalScore, int32 MoneyEarned, float DestructionRatio);
 	void ShowLevelSelect();
+	void ShowBenchmarkRunner();
 	
 	void UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges);
 	
@@ -35,6 +39,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UDemolitionLevelSelectWidget> LevelSelectWidgetClass;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UDemolitionMainMenuWidget> MainMenuWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UDemolitionBenchmarkRunnerWidget> BenchmarkRunnerWidgetClass;
+	
 	UPROPERTY()
 	TObjectPtr<UDemolitionHUDWidget> HUDWidget;
 	
@@ -44,8 +54,17 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UDemolitionLevelSelectWidget> LevelSelectWidget;
 	
+	UPROPERTY()
+	TObjectPtr<UDemolitionMainMenuWidget> MainMenuWidget;
+
+	UPROPERTY()
+	TObjectPtr<UDemolitionBenchmarkRunnerWidget> BenchmarkRunnerWidget;
+	
 private:
 	void HideAllWidgets();
 	void SetGameInput();
 	void SetUIInput(UUserWidget* FocusWidget);
+	
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	bool bAutoShowGameplayHUD = true;
 };

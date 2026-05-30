@@ -91,6 +91,17 @@ void UDemolitionBenchmarkSubsystem::Deinitialize() {
 	Super::Deinitialize();
 }
 
+FBox UDemolitionBenchmarkSubsystem::GetCurrentStructureBounds() const {
+	const AStructureActor* Structure = CurrentStructure.Get();
+	if (!IsValid(Structure)) return FBox(ForceInit);
+
+	FBox Bounds(ForceInit);
+	for (const ABuildingPiece* Piece : Structure->GetPieces())
+		if (IsValid(Piece))
+			Bounds += Piece->GetComponentsBoundingBox(true);
+	return Bounds;
+}
+
 void UDemolitionBenchmarkSubsystem::RunSweep(const int32 Sweep) {
 	Queue.Empty();
 	if (Sweep == 1) EnqueueSweep_AnchorRemoval();
@@ -101,11 +112,26 @@ void UDemolitionBenchmarkSubsystem::RunSweep(const int32 Sweep) {
 	StartNextRun();
 }
 
-void UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
-	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN};
-	const TArray<int32> Counts {10, 50};
-	constexpr int32 Repeats = 3;
+void UDemolitionBenchmarkSubsystem::RunAllSweeps() {
+	Queue.Empty();
+	LastSweepNumber = INDEX_NONE;
+	TotalRunsPerSweep.Empty(TotalSweeps);
+	CurrentRun = 0;
 	
+	TotalRunsPerSweep.Add(EnqueueSweep_AnchorRemoval());
+	TotalRunsPerSweep.Add(EnqueueSweep_SupportRemoval());
+	TotalRunsPerSweep.Add(EnqueueSweep_LoadRedistribution());
+	TotalRunsPerSweep.Add(EnqueueSweep_ProtectedPreservation());
+	
+	StartNextRun();
+}
+
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
+	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
+	const TArray<int32> Counts {5, 10/*10, 25, 50, 100, 250*/};
+	constexpr int32 Repeats = 1/*10*/;
+	
+	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
 		for (const int32 PieceCount : Counts)
 			for (int32 i = 0; i < Repeats; i++) {
@@ -114,16 +140,19 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_AnchorRemoval() {
 				Spec.Scenario = EBenchmarkScenario::AnchorRemoval;
 				Spec.PieceCount = PieceCount;
 				Spec.RunIndex = i;
-				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+				Spec.Seed = HashCombine(HashCombine(HashCombine(GetTypeHash(Model), GetTypeHash(Spec.Scenario)), PieceCount), i);
 				Queue.Enqueue(Spec);
+				TotalRuns++;
 			}
+	return TotalRuns;
 }
 
-void UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
-	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN};
-	const TArray<int32> Counts {10, 50};
-	constexpr int32 Repeats = 3;
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
+	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
+	const TArray<int32> Counts {5, 10/*10, 25, 50, 100, 250*/};
+	constexpr int32 Repeats = 1/*10*/;
 	
+	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
 		for (const int32 PieceCount : Counts)
 			for (int32 i = 0; i < Repeats; i++) {
@@ -132,16 +161,19 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_SupportRemoval() {
 				Spec.Scenario = EBenchmarkScenario::SupportRemoval;
 				Spec.PieceCount = PieceCount;
 				Spec.RunIndex = i;
-				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+				Spec.Seed = HashCombine(HashCombine(HashCombine(GetTypeHash(Model), GetTypeHash(Spec.Scenario)), PieceCount), i);
 				Queue.Enqueue(Spec);
+				TotalRuns++;
 			}
+	return TotalRuns;
 }
 
-void UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
 	constexpr int32 PieceCount = 7;
-	constexpr int32 Repeats = 3;
+	constexpr int32 Repeats = 1/*10*/;
 	
+	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
 		for (int32 i = 0; i < Repeats; i++) {
 			FBenchmarkRunSpec Spec;
@@ -149,16 +181,19 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_LoadRedistribution() {
 			Spec.Scenario = EBenchmarkScenario::LoadRedistribution;
 			Spec.PieceCount = PieceCount;
 			Spec.RunIndex = i;
-			Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), PieceCount), i);
+			Spec.Seed = HashCombine(HashCombine(HashCombine(GetTypeHash(Model), GetTypeHash(Spec.Scenario)), PieceCount), i);
 			Queue.Enqueue(Spec);
+			TotalRuns++;
 		}
+	return TotalRuns;
 }
 
-void UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation() {
+int32 UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation() {
 	const TArray<EBenchmarkModel> Models {EBenchmarkModel::PHYS, EBenchmarkModel::CONN, EBenchmarkModel::LOAD};
-	const TArray<int32> Widths {4, 5, 6};
-	constexpr int32 Repeats = 3;
+	const TArray<int32> Widths {4, 7/*4, 5, 6, 8, 10*/};
+	constexpr int32 Repeats = 1/*10*/;
 	
+	int32 TotalRuns = 0;
 	for (const EBenchmarkModel Model : Models)
 		for (const int32 BridgeWidth : Widths)
 			for (int32 i = 0; i < Repeats; i++) {
@@ -167,9 +202,11 @@ void UDemolitionBenchmarkSubsystem::EnqueueSweep_ProtectedPreservation() {
 				Spec.Scenario = EBenchmarkScenario::ProtectedPreservation;
 				Spec.PieceCount = BridgeWidth; 
 				Spec.RunIndex = i;
-				Spec.Seed = HashCombine(HashCombine(GetTypeHash(Model), BridgeWidth), i);
+				Spec.Seed = HashCombine(HashCombine(HashCombine(GetTypeHash(Model), GetTypeHash(Spec.Scenario)), BridgeWidth), i);
 				Queue.Enqueue(Spec);
+				TotalRuns++;
 			}
+	return TotalRuns;
 }
 
 void UDemolitionBenchmarkSubsystem::BeginRun() {
@@ -178,6 +215,7 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	const FBenchmarkRunSpec& Spec = *CurrentSpec;
 	UWorld* World = GetGameInstance()->GetWorld();
 	if (!World) { StartNextRun(); return; }
+	
 	
 	CurrentRow = FBenchmarkRow{};
 	CurrentRow.Model = GetEnumValueString(StaticEnum<EBenchmarkModel>()->GetNameByValue((int64)Spec.Model).ToString());
@@ -199,6 +237,10 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	CurrentStructure = Structure;
 	CurrentRow.StructureName = Structure->GetDebugName();
 	
+	CurrentRun++;
+	const int32 TotalRuns = TotalRunsPerSweep.IsValidIndex(LastSweepNumber-1) ? TotalRunsPerSweep[LastSweepNumber - 1] : 0;
+	OnRunStarted.Broadcast(CurrentRun, TotalRuns);
+	
 	// Read post-spawn graph metrics
 	const auto& Metrics = Structure->GetRuntimeMetrics();
 	CurrentRow.BuildConnectionsMs = Metrics.LastBuildMs;
@@ -214,20 +256,16 @@ void UDemolitionBenchmarkSubsystem::BeginRun() {
 	Model->Initialise(Structure);
 	CurrentRow.ModelInitialiseMs = (FPlatformTime::Seconds() - ModelInitStart) * 1000.f;
 	
-	// Read PHYS-only setup metrics
-	if (Spec.Model == EBenchmarkModel::PHYS)
-		if (auto* PhysModel = Cast<UStructureStabilityModel_PHYS>(Model))
-			CurrentRow.ConstraintCount = PhysModel->GetInitialConstraintCount(); // May be different to Connection count due to arrangement
-		
-	
 	// Apply trigger
 	switch (Spec.Scenario) {
 	case EBenchmarkScenario::AnchorRemoval:
 	case EBenchmarkScenario::LoadRedistribution:
 		CurrentRow.TriggerEventMs = BreakPieceByRole(Structure, EPieceRole::Anchor, CurrentRng);
+		Structure->RefreshStructureState();
 		break;
 	case EBenchmarkScenario::SupportRemoval:
 		CurrentRow.TriggerEventMs = BreakPieceByRole(Structure, EPieceRole::Support, CurrentRng);
+		Structure->RefreshStructureState();
 		break;
 	case EBenchmarkScenario::ProtectedPreservation:
 		CurrentRow.TriggerEventMs = ExplodeAtRole(Structure, EPieceRole::Objective, CurrentRng);
@@ -252,7 +290,7 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 
 	// Evaluate structure
 	if (AStructureActor* Structure = CurrentStructure.Get(); IsValid(Structure)) {
-		Structure->ProcessDeferredUpdates();
+		Structure->RefreshStructureState();
 		const FStructureResult Result = Structure->EvaluateStructure();
 		CurrentRow.BrokenPieces = Result.BrokenPiecesCount;
 		CurrentRow.DestructionRatio = Result.UnprotectedPiecesCount > 0 
@@ -267,18 +305,20 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 		
 		// Read PHYS-only post-event metrics
 		const FBenchmarkRunSpec& Spec = *CurrentSpec;
+		
+		// Read PHYS-specific metrics
+		CurrentRow.ConstraintCount = Metrics.ConstraintCount;
+		CurrentRow.ConstraintBreaks = Metrics.ConstraintBreaks;
+		CurrentRow.ConstraintSpawnMs = Metrics.ConstraintSpawnMs;
+		
 		if (Spec.Model == EBenchmarkModel::PHYS)
-			if (auto* PhysModel = Cast<UStructureStabilityModel_PHYS>(Structure->GetStabilityModelObj())) { // TODO can change so all values read to structure metrics then read from there
-				CurrentRow.ConstraintBreaks = PhysModel->GetConstraintBreakCount();
-				CurrentRow.DestructionRatio = CurrentRow.ConstraintCount > 0
-					? float(CurrentRow.ConstraintBreaks) / CurrentRow.ConstraintCount
-					: 0.f;
-			}
-		if (Spec.Model == EBenchmarkModel::LOAD) {
-			CurrentRow.CascadeIterations = Metrics.CascadeIterations;
-			CurrentRow.OverloadFails = Metrics.OverloadFails;
-			CurrentRow.CascadeMs = Metrics.CascadeMs;
-		}
+			CurrentRow.DestructionRatio = CurrentRow.ConstraintCount > 0
+				? float(CurrentRow.ConstraintBreaks) / CurrentRow.ConstraintCount
+				: 0.f;
+		
+		// Read LOAD-specific metrics
+		CurrentRow.CascadeIterations = Metrics.CascadeIterations;
+		CurrentRow.OverloadFails = Metrics.OverloadFails;
 		
 		CurrentRow.ProtectedFailureRatio = CurrentRow.ProtectedTotal > 0
 			? float(CurrentRow.ProtectedBroken) / CurrentRow.ProtectedTotal
@@ -300,7 +340,32 @@ void UDemolitionBenchmarkSubsystem::EndRun() {
 
 void UDemolitionBenchmarkSubsystem::StartNextRun() {
 	FBenchmarkRunSpec Spec;
-	if (!Queue.Dequeue(Spec)) { UE_LOG(LogTemp, Log, TEXT("[Benchmark] Sweep complete.")); return; }
+	if (!Queue.Dequeue(Spec)) {
+		UE_LOG(LogTemp, Log, TEXT("[Benchmark] Sweep complete.")); 
+		OnAllSweepsComplete.Broadcast();
+		return;
+	}
+	
+	int32 SweepNumber = INDEX_NONE;
+	switch (Spec.Scenario) {
+	case EBenchmarkScenario::AnchorRemoval:
+		SweepNumber = 1;
+		break;
+	case EBenchmarkScenario::SupportRemoval:
+		SweepNumber = 2;
+		break;
+	case EBenchmarkScenario::LoadRedistribution:
+		SweepNumber = 3;
+		break;
+	case EBenchmarkScenario::ProtectedPreservation:
+		SweepNumber = 4;
+		break;
+	}
+	if (SweepNumber != LastSweepNumber) {
+		LastSweepNumber = SweepNumber;
+		CurrentRun = 0;
+		OnSweepStarted.Broadcast(SweepNumber, TotalSweeps);
+	}
 	
 	CurrentSpec = Spec;
 	CurrentRng = FRandomStream(Spec.Seed);
@@ -327,7 +392,7 @@ float UDemolitionBenchmarkSubsystem::BreakPieceByRole(AStructureActor* Structure
                                                       const FRandomStream& Rng) {
 	const double StartTime = FPlatformTime::Seconds();
 	if (ABuildingPiece* Target = PickByRole(Structure, Role, Rng))
-		Target->RecordBreak();
+		Target->BreakPiece();
 	return (FPlatformTime::Seconds() - StartTime) * 1000.f;
 }
 
@@ -393,7 +458,7 @@ void UDemolitionBenchmarkSubsystem::EnsureFileOpen() {
 		const FString Header = TEXT(
 			"RunID,Timestamp,MapName,StructureName,Model,Scenario,"
 			"PieceCount,ConnectionCount,ConstraintCount,RunIndex,Seed,"
-			"StructureSpawnMs,BuildConnectionsMs,ModelInitialiseMs,TriggerEventMs,SolveMs,CascadeMs,"
+			"StructureSpawnMs,BuildConnectionsMs,ModelInitialiseMs,ConstraintSpawnMs,TriggerEventMs,SolveMs,"
 			"PeakFrameMs,AverageFrameMs,FramesObserved,"
 			"BrokenPieces,SupportedPieces,ProtectedTotal,ProtectedBroken,"
 			"ObjectiveTotal,ObjectiveBroken,AnchorTotal,AnchorBroken,LoadTotal,LoadBroken,ConstraintBreaks,"
@@ -417,7 +482,7 @@ void UDemolitionBenchmarkSubsystem::WriteRow(const FBenchmarkRow& Row) {
 			 "%.3f,%.3f,%s,\"%s\"\n"),
 		*Row.RunID, *Row.Timestamp, *Row.MapName, *Row.StructureName, *Row.Model, *Row.Scenario,
 		Row.PieceCount, Row.ConnectionCount, Row.ConstraintCount, Row.RunIndex, Row.Seed,
-		Row.StructureSpawnMs, Row.BuildConnectionsMs, Row.ModelInitialiseMs, Row.TriggerEventMs, Row.SolveMs, Row.CascadeMs,
+		Row.StructureSpawnMs, Row.BuildConnectionsMs, Row.ModelInitialiseMs,Row.ConstraintSpawnMs, Row.TriggerEventMs, Row.SolveMs,
 		Row.PeakFrameMs, Row.AverageFrameMs, Row.FramesObserved,
 		Row.BrokenPieces, Row.SupportedPieces, Row.ProtectedTotal, Row.ProtectedBroken, 
 		Row.ObjectiveTotal, Row.ObjectiveBroken, Row.AnchorTotal, Row.AnchorBroken, Row.LoadTotal, Row.LoadBroken, Row.ConstraintBreaks,

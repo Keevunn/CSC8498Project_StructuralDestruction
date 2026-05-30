@@ -150,6 +150,8 @@ AStructureActor* UStructureSpawner::DeferredStructureSetup(UWorld* World, const 
 	
 	Structure->AssignPieces(Pieces);
 	Structure->SetRunningBenchmark(true);
+	Structure->SetAutoRefresh(false); // minimises RefreshState() calls
+	
 	Structure->FinishSpawning(StructureXForm); // Runs BeginPlay
 	return Structure;
 }

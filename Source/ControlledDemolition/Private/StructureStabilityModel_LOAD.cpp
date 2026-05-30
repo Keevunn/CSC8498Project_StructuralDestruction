@@ -17,7 +17,6 @@ void UStructureStabilityModel_LOAD::RefreshState() {
 	if (!Structure) return;
 	
 	bRefreshActive = true;
-	const double StartTime = FPlatformTime::Seconds();
 	int32 CascadeIters = 0;
 	int32 TotalOverloads = 0;
 	
@@ -46,16 +45,21 @@ void UStructureStabilityModel_LOAD::RefreshState() {
 		if (BreakList.IsEmpty()) break; // nothing to break
 		
 		for (ABuildingPiece* Piece : BreakList)
-			Piece->RecordBreak();
+			Piece->BreakPiece();
 		
 		CascadeIters++;
 		DrawLoadDebug();
 	}
 	
-	const float ElapsedMs = (FPlatformTime::Seconds() - StartTime) * 1000.f;
+	LastCascadeIterations = CascadeIters;
+	LastOverloadFailsCount = TotalOverloads;
 	
-	Structure->RecordMetrics(CascadeIters, TotalOverloads, ElapsedMs);
 	bRefreshActive = false;
+}
+
+void UStructureStabilityModel_LOAD::WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const {
+	OutMetrics.CascadeIterations += LastCascadeIterations;
+	OutMetrics.OverloadFails += LastOverloadFailsCount;
 }
 
 void UStructureStabilityModel_LOAD::BuildLayers(TMap<TObjectKey<ABuildingPiece>, int32>& OutLayers) const {

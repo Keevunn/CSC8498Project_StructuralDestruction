@@ -14,6 +14,10 @@ class ABuildingPiece;
 enum class EPieceRole : uint8;
 class AStructureActor;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBenchmarkSweepsComplete);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBenchmarkSweepStarted, int32, SweepNumber, int32, TotalSweeps);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBenchmarkRunStarted, int32, RunNumber, int32, TotalRuns);
+
 UCLASS()
 class CONTROLLEDDEMOLITION_API UDemolitionBenchmarkSubsystem : public UGameInstanceSubsystem
 {
@@ -23,16 +27,31 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 	
+	UFUNCTION(BlueprintCallable, Category="Benchmark")
+	FBox GetCurrentStructureBounds() const;
+	
 	// Entry point - called from console, can be called from blueprint
 	UFUNCTION(BlueprintCallable, Category="Benchmark")
 	void RunSweep(int32 Sweep);
 	
+	UFUNCTION(BlueprintCallable, Category="Benchmark")
+	void RunAllSweeps();
+	
+	UPROPERTY(BlueprintAssignable, Category="Benchmark")
+	FOnBenchmarkSweepsComplete OnAllSweepsComplete;
+	
+	UPROPERTY(BlueprintAssignable, Category="Benchmark")
+	FOnBenchmarkSweepStarted OnSweepStarted;
+	
+	UPROPERTY(BlueprintAssignable, Category="Benchmark")
+	FOnBenchmarkRunStarted OnRunStarted;
+	
 private:
 	// Run loop ---------------------------------
-	void EnqueueSweep_AnchorRemoval();
-	void EnqueueSweep_SupportRemoval();
-	void EnqueueSweep_LoadRedistribution();
-	void EnqueueSweep_ProtectedPreservation();
+	int32 EnqueueSweep_AnchorRemoval();
+	int32 EnqueueSweep_SupportRemoval();
+	int32 EnqueueSweep_LoadRedistribution();
+	int32 EnqueueSweep_ProtectedPreservation();
 	void BeginRun();
 	void EndRun();
 	void StartNextRun();
@@ -75,4 +94,11 @@ private:
 	// Output -----------------------------------
 	TUniquePtr<IFileHandle> CSVHandle; 
 	float ObservationSeconds = 3.f;
+	
+	// UI ---------------------------------------
+	int32 LastSweepNumber = INDEX_NONE;
+	static constexpr int32 TotalSweeps = 4;
+	int32 CurrentRun = INDEX_NONE;
+	TArray<int32> TotalRunsPerSweep;
+	
 };

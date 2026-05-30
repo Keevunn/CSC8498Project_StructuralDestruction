@@ -25,8 +25,33 @@ void AStructureActor::AssignPieces(const TArray<ABuildingPiece*>& InPieces) {
 	for (ABuildingPiece* P : InPieces) Pieces.Add(P); // Structure Actor owns all pieces
 }
 
-void AStructureActor::ProcessDeferredUpdates() {
-	RefreshStructureState();
+void AStructureActor::RefreshStructureState() {
+	if (bConnectionsDirty) {
+		BuildConnections();
+		bConnectionsDirty = false;
+		bStabilityDirty = true; // would need to reconfigure supports
+	}
+	
+	if (bStabilityDirty && StabilityModel) {
+		const double StartTime = FPlatformTime::Seconds();
+		StabilityModel->RefreshState();
+		RuntimeMetrics.LastSolveMs = (FPlatformTime::Seconds() - StartTime) * 1000.0f;
+		StabilityModel->WriteMetrics(RuntimeMetrics);
+		
+		int32 SupportedPieceCount = 0;
+		for (const ABuildingPiece* Piece : Pieces) 
+			if (IsValid(Piece) && Piece->IsSupported()) SupportedPieceCount++;
+	
+		RuntimeMetrics.SupportedCount = SupportedPieceCount;
+		RuntimeMetrics.PieceCount = Pieces.Num();
+		
+		bStabilityDirty = false;
+	}
+	
+	if (bLogStructureMetrics)
+		LogStructureMetrics();
+	
+	if (!bRunningBenchmark) CheckJobConditions();
 }
 
 FStructureResult AStructureActor::EvaluateStructure() const {
@@ -55,24 +80,6 @@ FStructureResult AStructureActor::EvaluateStructure() const {
 	Result.bProtectedIntact = bProtectedIntact;
 	
 	return Result;
-}
-
-void AStructureActor::RecordMetrics(const float InElapsedMs) {
-	RuntimeMetrics.LastSolveMs = InElapsedMs;
-	
-	int32 SupportedPieceCount = 0;
-	for (const ABuildingPiece* Piece : Pieces) 
-		if (IsValid(Piece) && Piece->IsSupported()) SupportedPieceCount++;
-	
-	RuntimeMetrics.SupportedCount = SupportedPieceCount;
-	RuntimeMetrics.PieceCount = Pieces.Num();
-}
-
-void AStructureActor::RecordMetrics(const int32 Iterations, const int32 OverloadFails, const float CascadeMs) {
-	RecordMetrics(CascadeMs); // TODO may reevaluate
-	RuntimeMetrics.CascadeIterations = Iterations;
-	RuntimeMetrics.OverloadFails = OverloadFails;
-	RuntimeMetrics.CascadeMs = CascadeMs;
 }
 
 FString AStructureActor::GetDebugName() const {
@@ -109,13 +116,14 @@ void AStructureActor::BeginPlay()
 	BuildConnections();
 	MarkStabilityDirty();
 	
-	if (StabilityModel) 
-		StabilityModel->Initialise(this);
-	else 
-		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No StabilityModel assigned"), *GetDebugName());
+	if (!bRunningBenchmark) {
+		if (StabilityModel) 
+			StabilityModel->Initialise(this);
+		else 
+			UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No StabilityModel assigned"), *GetDebugName());
+	}
 	
 	RefreshStructureState();
-	RecordMetrics(0.f); // Fills RuntimeMetrics with initial data
 }
 
 void AStructureActor::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -269,24 +277,6 @@ void AStructureActor::HandlePieceBroken(ABuildingPiece* BrokenPiece) {
 	
 	if (bAutoRefreshOnBrokenPiece)
 		RefreshStructureState();
-}
-
-void AStructureActor::RefreshStructureState() {
-	if (bConnectionsDirty) {
-		BuildConnections();
-		bConnectionsDirty = false;
-		bStabilityDirty = true; // would need to reconfigure supports
-	}
-	
-	if (bStabilityDirty && StabilityModel) {
-		StabilityModel->RefreshState();
-		bStabilityDirty = false;
-	}
-	
-	if (bLogStructureMetrics)
-		LogStructureMetrics();
-	
-	if (!bRunningBenchmark) CheckJobConditions();
 }
 
 void AStructureActor::DrawConnectionDebug() const {

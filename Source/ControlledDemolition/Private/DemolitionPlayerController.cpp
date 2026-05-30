@@ -3,16 +3,18 @@
 
 #include "DemolitionPlayerController.h"
 
+#include "DemolitionBenchmarkRunnerWidget.h"
 #include "DemolitionGameState.h"
 #include "DemolitionHUDWidget.h"
 #include "DemolitionLevelSelectWidget.h"
+#include "DemolitionMainMenuWidget.h"
 #include "DemolitionResultWidget.h"
 #include "Blueprint/UserWidget.h"
 
 void ADemolitionPlayerController::BeginPlay() {
 	Super::BeginPlay();
 	
-	ShowGameplayHUD(); 
+	if (bAutoShowGameplayHUD) ShowGameplayHUD(); 
 	
 	if (ADemolitionGameState* GameState = GetWorld()->GetGameState<ADemolitionGameState>()) {
 		GameState->OnChargePlaced.AddUObject(this, &ADemolitionPlayerController::UpdateHUDCharges);
@@ -20,6 +22,18 @@ void ADemolitionPlayerController::BeginPlay() {
 		
 		GameState->OnJobCompleted.AddUObject(this, &ADemolitionPlayerController::ShowResultScreen);
 	}
+}
+
+void ADemolitionPlayerController::ShowMainMenu() {
+	HideAllWidgets();
+
+	if (!MainMenuWidget && MainMenuWidgetClass)
+		MainMenuWidget = CreateWidget<UDemolitionMainMenuWidget>(this, MainMenuWidgetClass);
+
+	if (!MainMenuWidget) return;
+
+	MainMenuWidget->AddToViewport();
+	SetUIInput(MainMenuWidget);
 }
 
 void ADemolitionPlayerController::ShowGameplayHUD() {
@@ -60,20 +74,33 @@ void ADemolitionPlayerController::ShowLevelSelect() {
 	SetUIInput(LevelSelectWidget);
 }
 
+void ADemolitionPlayerController::ShowBenchmarkRunner() {
+	HideAllWidgets();
+
+	if (!BenchmarkRunnerWidget && BenchmarkRunnerWidgetClass)
+		BenchmarkRunnerWidget = CreateWidget<UDemolitionBenchmarkRunnerWidget>(this, BenchmarkRunnerWidgetClass);
+
+	if (!BenchmarkRunnerWidget) return;
+
+	BenchmarkRunnerWidget->AddToViewport();
+	SetUIInput(BenchmarkRunnerWidget);
+}
+
 void ADemolitionPlayerController::UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges) {
 	if (HUDWidget)
 		HUDWidget->SetChargesData(ChargesUsed, MaxCharges);
 }
 
 void ADemolitionPlayerController::HideAllWidgets() {
-	if (HUDWidget)
-		HUDWidget->RemoveFromParent();
+	if (HUDWidget) HUDWidget->RemoveFromParent();
 	
-	if (ResultWidget)
-		ResultWidget->RemoveFromParent();
+	if (ResultWidget) ResultWidget->RemoveFromParent();
 	
-	if (LevelSelectWidget)
-		LevelSelectWidget->RemoveFromParent();
+	if (LevelSelectWidget) LevelSelectWidget->RemoveFromParent();
+	
+	if (MainMenuWidget) MainMenuWidget->RemoveFromParent();
+	
+	if (BenchmarkRunnerWidget) BenchmarkRunnerWidget->RemoveFromParent();
 }
 
 void ADemolitionPlayerController::SetGameInput() {

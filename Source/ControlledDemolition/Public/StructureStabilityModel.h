@@ -7,6 +7,7 @@
 #include "StructureStabilityModel.generated.h"
 
 
+struct FStructureRuntimeMetrics;
 class ABuildingPiece;
 class AStructureActor;
 
@@ -21,6 +22,8 @@ public:
 	virtual void RefreshState() PURE_VIRTUAL(RefreshState, );
 	
 	virtual FName GetModelType() const PURE_VIRTUAL(GetModelType, return NAME_None;);
+	
+	virtual void WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const {}
 	
 protected:
 	UPROPERTY()

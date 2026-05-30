@@ -12,7 +12,6 @@ void UStructureStabilityModel_PHYS::Initialise(AStructureActor* InStructure) {
 	for (FBaselineConstraintEdge& Edge : ConstraintEdges)
 		if (IsValid(Edge.Constraint)) Edge.Constraint->DestroyComponent();
 	ConstraintEdges.Empty();
-	InitialConstraintCount = 0;
 	ConstraintBreakCount = 0;
 	
 	OwningStructure = InStructure;
@@ -23,9 +22,17 @@ void UStructureStabilityModel_PHYS::Initialise(AStructureActor* InStructure) {
 	EnablePhysicsOnPieces(); // Enables physics for non-anchored pieces
 }
 
+void UStructureStabilityModel_PHYS::WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const {
+	OutMetrics.ConstraintCount = ConstraintEdges.Num();
+	OutMetrics.ConstraintBreaks = ConstraintBreakCount;
+	OutMetrics.ConstraintSpawnMs = ConstraintSpawnMs;
+}
+
 void UStructureStabilityModel_PHYS::SpawnConstraintsFromAdjacency() {
 	AStructureActor* Structure = OwningStructure.Get();
 	if (!Structure) return;
+	
+	const double StartTime = FPlatformTime::Seconds();
 	
 	// Constraint threshold calculations
 	const int32 NumPieces = Structure->GetPieces().Num();
@@ -96,7 +103,7 @@ void UStructureStabilityModel_PHYS::SpawnConstraintsFromAdjacency() {
 		}
 	}
 	
-	InitialConstraintCount = ConstraintEdges.Num();
+	ConstraintSpawnMs = (FPlatformTime::Seconds() - StartTime) * 1000.0f;
 }
 
 void UStructureStabilityModel_PHYS::RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint,
@@ -113,7 +120,10 @@ void UStructureStabilityModel_PHYS::RegisterConstraintEdge(UPhysicsConstraintCom
 }
 
 void UStructureStabilityModel_PHYS::ConfigurePiecesForSetup() {
-	for (ABuildingPiece* Piece : OwningStructure->GetPieces()) {
+	AStructureActor* Structure = OwningStructure.Get();
+	if (!Structure) return;
+	
+	for (ABuildingPiece* Piece : Structure->GetPieces()) {
 		if (!IsValid(Piece)) continue;
 		UStaticMeshComponent* Mesh = Piece ? Piece->GetPieceMesh() : nullptr;
 		if (!IsValid(Mesh)) continue; 
@@ -126,7 +136,10 @@ void UStructureStabilityModel_PHYS::ConfigurePiecesForSetup() {
 }
 
 void UStructureStabilityModel_PHYS::EnablePhysicsOnPieces() {
-	for (ABuildingPiece* Piece : OwningStructure->GetPieces()) {
+	AStructureActor* Structure = OwningStructure.Get();
+	if (!Structure) return;
+	
+	for (ABuildingPiece* Piece : Structure->GetPieces()) {
 		if (!IsValid(Piece)) continue;
 		
 		UStaticMeshComponent* Mesh = Piece->GetPieceMesh();

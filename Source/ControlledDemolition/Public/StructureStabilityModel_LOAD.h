@@ -19,6 +19,8 @@ public:
 	
 	virtual FName GetModelType() const override { return TEXT("LOAD"); }
 	
+	virtual void WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const override;
+	
 private:
 	void BuildLayers(TMap<TObjectKey<ABuildingPiece>, int32>& OutLayers) const;
 	void AccumulateLoad(const TMap<TObjectKey<ABuildingPiece>, int32>& Layers, TMap<TObjectKey<ABuildingPiece>, float>& OutAccumLoad) const;
@@ -27,6 +29,9 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Load Propagation", meta = (ClampMin = "1"))
 	int32 MaxCascadeIterations = 10;
+	
+	int32 LastCascadeIterations = 0;
+	int32 LastOverloadFailsCount = 0;
 	
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDrawLoadInfoDebug = true;

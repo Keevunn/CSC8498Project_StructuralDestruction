@@ -46,8 +46,7 @@ public:
 	
 	FOnBuildingPieceBroken OnPieceBroken;
 	
-	void RecordBreak();
-	void RecordPhysicsBreak();
+	void BreakPiece();
 	
 	void SetIsObjective(const bool bInIsObjective) { bIsObjective = bInIsObjective; }
 	void SetShouldProtect(const bool bInShouldProtect) { bShouldProtect = bInShouldProtect; }
@@ -70,7 +69,6 @@ public:
 	FString GetDebugName() const;
 
 protected:
-	void BreakPiece();
 	
 	FLinearColor GetRoleDebugColour() const;
 	

@@ -120,7 +120,7 @@ void AChargeActor::Explode() {
 		}
 		
 		for (const TObjectKey<AStructureActor>& StructureKey : AffectedStructures)
-			if (AStructureActor* Structure = StructureKey.ResolveObjectPtr()) Structure->ProcessDeferredUpdates();
+			if (AStructureActor* Structure = StructureKey.ResolveObjectPtr()) Structure->RefreshStructureState();
 	}
 	
 	Destroy();

@@ -11,10 +11,11 @@ void UStructureStabilityModel_CONN::Initialise(AStructureActor* InStructure) {
 }
 
 void UStructureStabilityModel_CONN::RefreshState() {
-	const double StartSec = FPlatformTime::Seconds();
+	AStructureActor* Structure = OwningStructure.Get();
+	if (!Structure) return;
 	
-	const auto& Pieces = OwningStructure->GetPieces();
-	const auto& Connections = OwningStructure->GetConnections();
+	const auto& Pieces = Structure->GetPieces();
+	const auto& Connections = Structure->GetConnections();
 	
 	for (ABuildingPiece* Piece : Pieces)
 		if (IsValid(Piece)) Piece->SetSupported(false);
@@ -33,7 +34,7 @@ void UStructureStabilityModel_CONN::RefreshState() {
 	}
 	
 	if (!bFoundAnchor)
-		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No assigned anchors"), *OwningStructure->GetDebugName());
+		UE_LOG(LogTemp, Warning, TEXT("StructureActor '%s' | No assigned anchors"), *Structure->GetDebugName());
 	
 	// BFS - sets 'supported' to true as long as piece is connected
 	while (!Queue.IsEmpty()) {
@@ -48,9 +49,7 @@ void UStructureStabilityModel_CONN::RefreshState() {
 		
 		for (const TWeakObjectPtr<ABuildingPiece>& WeakNeighbour : *Neighbours) {
 			ABuildingPiece* Neighbour = WeakNeighbour.Get();
-			if (!IsValid(Neighbour) || Neighbour->IsBroken()) continue;
-			
-			if (Neighbour->IsSupported()) continue;
+			if (!IsValid(Neighbour) || Neighbour->IsBroken() || Neighbour->IsSupported()) continue;
 			
 			Neighbour->SetSupported(true);
 			Queue.Enqueue(Neighbour);
@@ -77,15 +76,12 @@ void UStructureStabilityModel_CONN::RefreshState() {
 			);
 		}
 	}
-	
-	const double EndSec = FPlatformTime::Seconds();
-	const float ElapsedMs = (EndSec - StartSec) * 1000.0;
-	OwningStructure->RecordMetrics(ElapsedMs);
 }
 
 void UStructureStabilityModel_CONN::DetachUnsupportedPieces() {
-	const auto& Pieces = OwningStructure->GetPieces();
+	AStructureActor* Structure = OwningStructure.Get();
+	if (!Structure) return;
 	
-	for (ABuildingPiece* Piece : Pieces)
-		if (IsValid(Piece) && !Piece->IsBroken() && !Piece->IsSupported() && !Piece->IsAnchor()) Piece->RecordBreak();
+	for (ABuildingPiece* Piece : Structure->GetPieces())
+		if (IsValid(Piece) && !Piece->IsBroken() && !Piece->IsSupported() && !Piece->IsAnchor()) Piece->BreakPiece();
 }

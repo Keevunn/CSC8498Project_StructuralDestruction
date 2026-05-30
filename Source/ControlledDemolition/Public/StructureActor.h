@@ -59,11 +59,6 @@ struct FStructureRuntimeMetrics {
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Load Propagation Model")
 	int32 OverloadFails = 0;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Metrics|Load Propagation Model")
-	float CascadeMs = 0.f;
-
-	//void ApplyExternalTrigger(EBenchmarkScenario Scenario, const FRandomStream& Rng);
 };
 
 UCLASS()
@@ -82,12 +77,9 @@ public:
 	
 	void MarkConnectionsDirty() { bConnectionsDirty = true; }
 	void MarkStabilityDirty() { bStabilityDirty = true; }
-	void ProcessDeferredUpdates();
+	void RefreshStructureState();
 	
 	FStructureResult EvaluateStructure() const;
-	
-	void RecordMetrics(float InElapsedMs);
-	void RecordMetrics(int32 Iterations, int32 OverloadFails, float CascadeMs);
 	
 	const TArray<TObjectPtr<ABuildingPiece>>& GetPieces() const { return Pieces; }
 	const TMap<TObjectKey<ABuildingPiece>, TArray<TWeakObjectPtr<ABuildingPiece>>>& GetConnections() const { return Connections; }
@@ -95,7 +87,8 @@ public:
 	FString GetDebugName() const;
 	const FStructureRuntimeMetrics& GetRuntimeMetrics() const { return RuntimeMetrics; }
 	
-	void SetRunningBenchmark(bool InStatus) { bRunningBenchmark = InStatus; }
+	void SetRunningBenchmark(const bool Status) { bRunningBenchmark = Status; }
+	void SetAutoRefresh(const bool Status) { bAutoRefreshOnBrokenPiece = Status; }
 	
 protected:		
 	// Called when the game starts or when spawned
@@ -111,7 +104,6 @@ protected:
 	bool HasMetObjectiveCondition() const;
 	
 	void HandlePieceBroken(ABuildingPiece* BrokenPiece);
-	void RefreshStructureState();
 	
 	void DrawConnectionDebug() const;
 	void LogStructureMetrics() const;

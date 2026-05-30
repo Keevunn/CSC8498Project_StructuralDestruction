@@ -119,21 +119,18 @@ void ABuildingPiece::ApplyExplosionDamage(const FVector& ExplosionOrigin, float 
 	}
 }
 
-void ABuildingPiece::RecordBreak() {
+void ABuildingPiece::BreakPiece() {
 	if (bBroken) return;
-	BreakPiece();
-}
-
-void ABuildingPiece::RecordPhysicsBreak() {
-	if (bBroken) return;
-	
 	bBroken = true;
 	bSupported = false;
+	
+	if (PieceMesh)
+		PieceMesh->SetSimulatePhysics(true);
 	
 	OnPieceBroken.Broadcast(this);
 	
 	if (GEngine) 
-		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | BROKE (from physics)"), *GetDebugName());
+		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | BROKE"), *GetDebugName());
 }
 
 FVector ABuildingPiece::GetPieceCentreLocation() const {
@@ -155,32 +152,18 @@ FString ABuildingPiece::GetDebugName() const {
 #endif
 }
 
-void ABuildingPiece::BreakPiece() {
-	if (bBroken) return;  
-	bBroken = true;
-	bSupported = false;
-	
-	if (PieceMesh)
-		PieceMesh->SetSimulatePhysics(true);
-	
-	OnPieceBroken.Broadcast(this);
-	
-	if (GEngine) 
-		UE_LOG(LogTemp, Log, TEXT("BuildingPiece '%s' | BROKE"), *GetDebugName());
-}
-
 FLinearColor ABuildingPiece::GetRoleDebugColour() const {
 	switch (PieceRole) {
 	case EPieceRole::Anchor:
-		return FLinearColor(0.05f, 0.05f, 0.05f);
+		return FLinearColor(1.f, 0.f, 1.f);
 	case EPieceRole::Support:
-		return FLinearColor(1.0f, 0.7f, 0.1f);
+		return FLinearColor(1.f, 1.f, 0.f);
 	case EPieceRole::Load:
-		return FLinearColor(0.5f, 0.5f, 0.5f);
+		return FLinearColor(1.f, 1.f, 1.f);
 	case EPieceRole::Objective:
-		return FLinearColor(0.1f, 1.0f, 0.1f);
+		return FLinearColor(0.f, 1.0f, 0.f);
 	case EPieceRole::Protected:
-		return FLinearColor(0.1f, 0.3f, 1.0f);
+		return FLinearColor(0.f, 1.f, 1.0f);
 	default:
 		return FLinearColor::White;
 	}

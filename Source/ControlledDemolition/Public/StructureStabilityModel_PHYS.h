@@ -37,8 +37,7 @@ public:
 	
 	virtual FName GetModelType() const override { return TEXT("PHYS"); }
 	
-	int32 GetInitialConstraintCount() const { return InitialConstraintCount; }
-	int32 GetConstraintBreakCount() const { return ConstraintBreakCount; }
+	virtual void WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const override;
 	
 protected:
 	void SpawnConstraintsFromAdjacency();
@@ -64,6 +63,6 @@ protected:
 	const float LeverArmScale = 50.f;	// Torque scales with lever arm, distance from joint
 	const float Gravity = 980.f;		// According to Unreal's default gravity value
 	
-	int32 InitialConstraintCount = 0;
 	int32 ConstraintBreakCount = 0;
+	float ConstraintSpawnMs = 0.f;
 };
