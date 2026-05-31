@@ -516,10 +516,20 @@ void UDemolitionBenchmarkSubsystem::WriteRow(const FBenchmarkRow& Row) {
 }
 
 void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec) const {
+	const AStructureActor* Structure = CurrentStructure.Get();
+	const bool bIsPHYS = Spec.Model == EBenchmarkModel::PHYS;
+	bool bPHYSObjectiveSeparated = false;
+	bool bPHYSProtectedDamaged = false;
+			
+	if (IsValid(Structure)) {
+		const UStructureStabilityModel* Model = Structure->GetStabilityModelObj();
+		bPHYSObjectiveSeparated = Model && Model->OverridesJobConditions() && Model->HasMetObjectiveCondition();
+		bPHYSProtectedDamaged = Model && Model->OverridesJobConditions() && Model->HasFailedProtectedCondition();
+	}
 	
-	if (Spec.Model != EBenchmarkModel::PHYS && OutRow.ProtectedBroken > 0) {
+	if (bIsPHYS ? bPHYSProtectedDamaged : OutRow.ProtectedBroken > 0) {
 		OutRow.Passed = false;
-		OutRow.OutcomeLabel = TEXT("ProtectedBroken");
+		OutRow.OutcomeLabel = bIsPHYS ? TEXT("ProtectedConstraintBroken") : TEXT("ProtectedBroken");
 		return;
 	}
 	
@@ -530,7 +540,7 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 		* Simple tower:	Removing anchor should detach all pieces (PHYS: No effect - controlled by Chaos)
 		* Pass:			For tower of N pieces, (N-1) non-anchor pieces should be broken
 		*/
-		if (Spec.Model == EBenchmarkModel::PHYS) {
+		if (bIsPHYS) {
 			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
 			OutRow.OutcomeLabel = OutRow.Passed	? TEXT("ExpectedNoCollapse") : TEXT("UnexpectedCollapse");
 			break;
@@ -542,7 +552,7 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 	}
 	case EBenchmarkScenario::SupportRemoval:
 	{
-		if (Spec.Model == EBenchmarkModel::PHYS) {
+		if (bIsPHYS) {
 			OutRow.Passed = OutRow.BrokenPieces == 1 && OutRow.ConstraintBreaks == 0;
 			OutRow.OutcomeLabel = OutRow.Passed	? TEXT("ExpectedNoCollapse") : TEXT("UnexpectedCollapse");
 			break;
@@ -569,9 +579,9 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 			break;
 		} break;
 	case EBenchmarkScenario::ProtectedPreservation:
-		if (Spec.Model == EBenchmarkModel::PHYS) {
-			OutRow.Passed = OutRow.ConstraintBreaks >= 1;
-			OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ConstraintBroken") : TEXT("UnexpectedNoConstraintBroken");
+		if (bIsPHYS) {
+			OutRow.Passed = bPHYSObjectiveSeparated;
+			OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ObjectiveSeparatedProtectedPreserved") : TEXT("ObjectiveNotSeparated");
 			break;
 		}
 		OutRow.Passed = OutRow.ObjectiveBroken >= 1;
