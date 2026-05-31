@@ -44,6 +44,8 @@ public:
 	
 	virtual void WriteMetrics(FStructureRuntimeMetrics& OutMetrics) const override;
 	
+	int32 CountAttachedConstraints(const ABuildingPiece* Piece, const bool bOnlyUnbroken) const;
+	
 protected:
 	void SpawnConstraintsFromAdjacency();
 	void RegisterConstraintEdge(UPhysicsConstraintComponent* Constraint, ABuildingPiece* PieceA, ABuildingPiece* PieceB);
@@ -67,7 +69,4 @@ protected:
 	
 	int32 ConstraintBreakCount = 0;
 	float ConstraintSpawnMs = 0.f;
-	
-private:
-	int32 CountAttachedConstraints(const ABuildingPiece* Piece, const bool bOnlyUnbroken) const;
 };

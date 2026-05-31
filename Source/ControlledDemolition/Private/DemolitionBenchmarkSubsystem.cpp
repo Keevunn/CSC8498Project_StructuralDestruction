@@ -518,13 +518,21 @@ void UDemolitionBenchmarkSubsystem::WriteRow(const FBenchmarkRow& Row) {
 void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, const FBenchmarkRunSpec& Spec) const {
 	const AStructureActor* Structure = CurrentStructure.Get();
 	const bool bIsPHYS = Spec.Model == EBenchmarkModel::PHYS;
-	bool bPHYSObjectiveSeparated = false;
+	bool bPHYSMetObjectiveCondition = false;
 	bool bPHYSProtectedDamaged = false;
 			
 	if (IsValid(Structure)) {
 		const UStructureStabilityModel* Model = Structure->GetStabilityModelObj();
-		bPHYSObjectiveSeparated = Model && Model->OverridesJobConditions() && Model->HasMetObjectiveCondition();
 		bPHYSProtectedDamaged = Model && Model->OverridesJobConditions() && Model->HasFailedProtectedCondition();
+		
+		if (Spec.Scenario == EBenchmarkScenario::ProtectedPreservation)
+			if (auto* PHYSModel = Cast<UStructureStabilityModel_PHYS>(Model)) {
+				const ABuildingPiece* TargetPiece = Structure->GetPieces()[TriggeredPieceIndex];
+				const int TotalAttached = PHYSModel->CountAttachedConstraints(TargetPiece, false);
+				const int UnbrokenAttached = PHYSModel->CountAttachedConstraints(TargetPiece, true);
+				
+				bPHYSMetObjectiveCondition = TotalAttached > 0 && UnbrokenAttached == 0;
+			}
 	}
 	
 	if (bIsPHYS ? bPHYSProtectedDamaged : OutRow.ProtectedBroken > 0) {
@@ -580,7 +588,7 @@ void UDemolitionBenchmarkSubsystem::EvaluatePassFail(FBenchmarkRow& OutRow, cons
 		} break;
 	case EBenchmarkScenario::ProtectedPreservation:
 		if (bIsPHYS) {
-			OutRow.Passed = bPHYSObjectiveSeparated;
+			OutRow.Passed = bPHYSMetObjectiveCondition;
 			OutRow.OutcomeLabel = OutRow.Passed ? TEXT("ObjectiveSeparatedProtectedPreserved") : TEXT("ObjectiveNotSeparated");
 			break;
 		}
