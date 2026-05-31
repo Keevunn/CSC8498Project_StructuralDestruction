@@ -15,6 +15,9 @@ void UDemolitionMainMenuWidget::NativeConstruct() {
 
 	if (Button_SweepSelect)
 		Button_SweepSelect->OnClicked.AddDynamic(this, &UDemolitionMainMenuWidget::HandleSweepSelectClicked);
+	
+	if (Button_Quit)
+		Button_Quit->OnClicked.AddDynamic(this, &UDemolitionMainMenuWidget::HandleQuitClicked);
 }
 
 void UDemolitionMainMenuWidget::HandleDemoLevelsClicked() {
@@ -25,4 +28,8 @@ void UDemolitionMainMenuWidget::HandleDemoLevelsClicked() {
 void UDemolitionMainMenuWidget::HandleSweepSelectClicked() {
 	if (auto* PC = Cast<ADemolitionPlayerController>(GetOwningPlayer()))
 		PC->ShowSweepSelect();
+}
+
+void UDemolitionMainMenuWidget::HandleQuitClicked() {
+	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
 }

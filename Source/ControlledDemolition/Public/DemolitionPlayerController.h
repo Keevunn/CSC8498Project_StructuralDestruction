@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerController.h"
 #include "DemolitionPlayerController.generated.h"
 
+class UInputMappingContext;
 class UDemolitionSweepSelectWidget;
 class UInputAction;
 class UDemolitionMainMenuWidget;
@@ -33,6 +34,14 @@ public:
 	void UpdateHUDCharges(int32 ChargesUsed, int32 MaxCharges);
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, Category="Input")
+	TObjectPtr<UInputMappingContext> GlobalMappingContext;
+
+	UPROPERTY(EditDefaultsOnly, Category="Input")
+	TObjectPtr<UInputMappingContext> GameplayMappingContext;
+	
+	void SetGameplayInputEnabled(bool bEnabled);
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UDemolitionHUDWidget> HUDWidgetClass;
 	
@@ -69,7 +78,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UDemolitionSweepSelectWidget> SweepSelectWidget;
 	
-	// Input for debug
+	// Input Actions
 	virtual void SetupInputComponent() override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -78,8 +87,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> ToggleVerboseLogsAction;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> QuitGameAction;
+	
 	void HandleToggleDrawDebug();
 	void HandleToggleVerboseLogs();
+	void HandleQuitGame();
 	
 private:
 	void HideAllWidgets();

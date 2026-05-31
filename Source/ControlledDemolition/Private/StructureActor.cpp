@@ -49,6 +49,11 @@ void AStructureActor::RefreshStructureState() {
 		bStabilityDirty = false;
 	}
 	
+	if (bConnectionDrawPending && StabilityModel) {
+		DrawConnectionDebug();
+		bConnectionDrawPending = false;
+	}
+	
 	if (DemolitionDebug::VerboseLogsEnabled())
 		LogStructureMetrics();
 	
@@ -128,11 +133,20 @@ void AStructureActor::BeginPlay()
 }
 
 void AStructureActor::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	for (ABuildingPiece* Piece : Pieces)
-		if (IsValid(Piece)) {
-			Piece->OnPieceBroken.RemoveAll(this);
-			Piece->Destroy();
+	if (StabilityModel)
+		StabilityModel->Teardown();
+	
+	for (ABuildingPiece* Piece : Pieces) {
+		if (!IsValid(Piece)) continue;
+		
+		if (UStaticMeshComponent* Mesh = Piece->GetPieceMesh()) {
+			Mesh->SetSimulatePhysics(false);
+			Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
+		
+		Piece->OnPieceBroken.RemoveAll(this);
+		Piece->Destroy();
+	}
 	Pieces.Empty();
 	
 	if (ADemolitionGameState* GameState = GetWorld()->GetGameState<ADemolitionGameState>())
@@ -171,7 +185,7 @@ void AStructureActor::FindConnectionsForPiece(ABuildingPiece* SourcePiece) {
 			Dimensions,
 			FColor::Yellow,
 			false,
-			5.f,
+			2.5f,
 			-1,
 			1.5f
 		);
@@ -220,7 +234,7 @@ void AStructureActor::BuildConnections() {
 	for (ABuildingPiece* Piece : Pieces)
 		FindConnectionsForPiece(Piece);
 	
-	DrawConnectionDebug();
+	bConnectionDrawPending = true;
 	
 	const double EndTime = FPlatformTime::Seconds();
 	RuntimeMetrics.LastBuildMs = (EndTime - StartTime) * 1000.0;
@@ -302,7 +316,7 @@ void AStructureActor::HandlePieceBroken(ABuildingPiece* BrokenPiece) {
 }
 
 void AStructureActor::DrawConnectionDebug() const {
-	if (!DemolitionDebug::DrawDebugEnabled() || !GetWorld()) return;
+	if (!DemolitionDebug::DrawDebugEnabled() || !GetWorld() || !StabilityModel || GetStabilityModelType() == FName("PHYS")) return;
 	
 	for (const auto& Node : Connections) {
 		ABuildingPiece* PieceA = Node.Key.ResolveObjectPtr();
@@ -318,7 +332,7 @@ void AStructureActor::DrawConnectionDebug() const {
 				PieceB->GetActorLocation(),
 				FColor::Cyan,
 				false,
-				5.f,
+				2.f,
 				-1,
 				2.f
 			);

@@ -118,7 +118,7 @@ protected:
 	bool bAutoBuildConnects = true;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Structure|Detection", meta = (ClampMin = "0.0"))
-	float ConnectionDistanceThreshold = 20.f;
+	float ConnectionDistanceThreshold = 2.5f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Structure|Update")
 	bool bAutoRefreshOnBrokenPiece = true;
@@ -145,4 +145,6 @@ protected:
 	int32 LastSupportedPieceCount = 0;
 	
 	bool bRunningBenchmark = false;
+	
+	bool bConnectionDrawPending = false;
 };

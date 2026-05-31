@@ -23,6 +23,16 @@ void UStructureStabilityModel_PHYS::Initialise(AStructureActor* InStructure) {
 	EnablePhysicsOnPieces(); // Enables physics for non-anchored pieces
 }
 
+void UStructureStabilityModel_PHYS::Teardown() {
+	for (FBaselineConstraintEdge& Edge : ConstraintEdges) {
+		if (IsValid(Edge.Constraint))
+			Edge.Constraint->DestroyComponent();
+		Edge.Constraint = nullptr;
+	}
+	ConstraintEdges.Empty();
+	ConstraintBreakCount = 0;
+}
+
 bool UStructureStabilityModel_PHYS::HasMetObjectiveCondition() const {
 	const AStructureActor* Structure = OwningStructure.Get();
 	if (!IsValid(Structure)) return false;
@@ -228,9 +238,6 @@ void UStructureStabilityModel_PHYS::HandleConstraintBroken(const int32 Constrain
 	
 		Edge.bBroken = true;
 		ConstraintBreakCount++;
-	
-		Edge.Constraint->DestroyComponent();
-		Edge.Constraint = nullptr;
 	}
 	
 	DrawConstraintDebug();

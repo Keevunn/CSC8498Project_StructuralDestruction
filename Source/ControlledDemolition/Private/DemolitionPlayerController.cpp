@@ -12,10 +12,16 @@
 #include "DemolitionResultWidget.h"
 #include "DemolitionSweepSelectWidget.h"
 #include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 void ADemolitionPlayerController::BeginPlay() {
 	Super::BeginPlay();
+	
+	if (GlobalMappingContext)
+		if (auto* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+			Subsystem->AddMappingContext(GlobalMappingContext, 0);
 	
 	if (bAutoShowGameplayHUD) ShowGameplayHUD(); 
 	
@@ -106,6 +112,16 @@ void ADemolitionPlayerController::UpdateHUDCharges(int32 ChargesUsed, int32 MaxC
 		HUDWidget->SetChargesData(ChargesUsed, MaxCharges);
 }
 
+void ADemolitionPlayerController::SetGameplayInputEnabled(bool bEnabled) {
+	auto* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	if (!Subsystem || !GameplayMappingContext) return;
+
+	if (bEnabled)
+		Subsystem->AddMappingContext(GameplayMappingContext, 1);
+	else
+		Subsystem->RemoveMappingContext(GameplayMappingContext);
+}
+
 void ADemolitionPlayerController::SetupInputComponent() {
 	Super::SetupInputComponent();
 	
@@ -114,6 +130,8 @@ void ADemolitionPlayerController::SetupInputComponent() {
 			EIC->BindAction(ToggleDrawDebugAction, ETriggerEvent::Started, this, &ADemolitionPlayerController::HandleToggleDrawDebug);
 		if (ToggleVerboseLogsAction)
 			EIC->BindAction(ToggleVerboseLogsAction, ETriggerEvent::Started, this, &ADemolitionPlayerController::HandleToggleVerboseLogs);
+		if (QuitGameAction)
+			EIC->BindAction(QuitGameAction, ETriggerEvent::Started, this, &ADemolitionPlayerController::HandleQuitGame);
 	}
 }
 
@@ -123,6 +141,10 @@ void ADemolitionPlayerController::HandleToggleDrawDebug() {
 
 void ADemolitionPlayerController::HandleToggleVerboseLogs() {
 	DemolitionDebug::ToggleVerboseLogs();
+}
+
+void ADemolitionPlayerController::HandleQuitGame() {
+	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
 }
 
 void ADemolitionPlayerController::HideAllWidgets() {
@@ -140,13 +162,18 @@ void ADemolitionPlayerController::HideAllWidgets() {
 }
 
 void ADemolitionPlayerController::SetGameInput() {
+	SetGameplayInputEnabled(true);
 	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
 	bShowMouseCursor = false;
 }
 
 void ADemolitionPlayerController::SetUIInput() {
-	FInputModeUIOnly InputMode;
+	SetGameplayInputEnabled(false);
+	FInputModeGameAndUI InputMode;
+	
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
 	
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;

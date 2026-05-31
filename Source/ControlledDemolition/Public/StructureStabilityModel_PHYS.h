@@ -31,6 +31,7 @@ class CONTROLLEDDEMOLITION_API UStructureStabilityModel_PHYS : public UStructure
 	
 public:
 	virtual void Initialise(AStructureActor* InStructure) override;
+	virtual void Teardown() override;
 	
 	// Intentionally empty - no graph to resolve
 	virtual void RefreshState() override { DrawConstraintDebug(); } 

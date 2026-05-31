@@ -18,6 +18,7 @@ class CONTROLLEDDEMOLITION_API UStructureStabilityModel : public UObject
 	
 public:
 	virtual void Initialise(AStructureActor* InStructure) PURE_VIRTUAL(Initialise, );
+	virtual void Teardown() {}
 	
 	virtual void RefreshState() PURE_VIRTUAL(RefreshState, );
 	

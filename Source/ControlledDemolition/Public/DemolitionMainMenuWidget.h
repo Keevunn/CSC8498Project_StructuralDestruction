@@ -23,9 +23,15 @@ protected:
 	UFUNCTION()
 	void HandleSweepSelectClicked();
 	
+	UFUNCTION()
+	void HandleQuitClicked();
+	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_DemoLevels;
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_SweepSelect;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Button_Quit;
 };
