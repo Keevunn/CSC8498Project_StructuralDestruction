@@ -3,7 +3,7 @@
 An Unreal Engine 5 C++ project exploring graph-based structural approximations for real-time destruction in games. Developed as my master's dissertation project.
 
 ## Demo
-[Click here to watch the project demonstration]()
+[Click here to watch the project demonstration](https://youtu.be/EMv7SM4RDvs)
 
 ## Abstract
 Many video games use destructible environments to create dynamic and more immersive gameplay. These destruction systems can be complex, as they are able to produce damaged geometry and determine the subsequent behaviour of the resulting structure. This paper investigates whether simplified graph-based structural models can produce game-plausible behaviour in a real-time simulation, relative to a physics-driven baseline. 
